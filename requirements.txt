@@ -1,0 +1,10 @@
+# Instala dbt-core + el adapter de SQL Server (pyodbc incluido como
+# dependencia). Ver README.md ("Setup local") para el resto del setup
+# (venv, ODBC Driver 17, .env, profiles.yml).
+#
+# Sin pinnear todavía a propósito: dbt-core y dbt-sqlserver tienen que
+# resolverse a versiones compatibles entre sí, más fácil dejar que pip
+# lo resuelva la primera vez. Una vez confirmado que `dbt debug` funciona,
+# correr `pip freeze > requirements.txt` para fijar las versiones reales
+# (mismo patrón que ya usan los otros repos del portfolio).
+dbt-sqlserver
