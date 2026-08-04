@@ -1,0 +1,71 @@
+version: 2
+
+# Fuentes consolidadas del portfolio: declaradas UNA sola vez acá y
+# reutilizadas por los 3 proyectos (canibalizacion, top_300, mayoristas)
+# vía staging/. Antes de esto, cada proyecto tenía su propia copia de
+# estas tablas apuntadas desde SQL suelto o notebooks — ver
+# PLAN_MAESTRO_REINGENIERIA.md §1 (hallazgos #2, #3, #4).
+
+sources:
+  - name: dato_solutions
+    schema: dbo
+    description: >
+      Base replicada de producción provista por el cliente. Contención de
+      recursos con otros pipelines pesados (forecast) mitigada en Fase 0.5
+      vía Pool de Airflow — ver PLAN_MAESTRO_REINGENIERIA.md.
+    tables:
+      - name: Ventas_Ahorrazo
+        description: >
+          Fact de ventas transaccional, 238M+ filas (confirmado en el
+          perfilado de canibalizacion_ahorrazo). HEAP sin Columnstore
+          Index — fix candidato en Fase 0, independiente de dbt.
+        columns:
+          - name: cliente_id
+            description: Identificador de cliente tal como llega de origen (tipo inconsistente con clientes_mapeo.cliente_id, normalizado en stg_clientes_mapeo).
+          - name: producto_id
+          - name: pdv_id
+            description: Identificador de punto de venta/sucursal.
+          - name: fecha_venta
+          - name: venta_gs
+          - name: unidades
+          - name: timbrado
+          - name: factura_nro
+          - name: medio_pago
+
+      - name: Clientes
+        description: >
+          Tabla cruda de clientes, origen de clientes_mapeo/clientes_limpio.
+          Insumo de int_clientes_mapeo_limpio (Fase 2) — reemplaza el
+          stored proc sp_refresh_clientes_mapeo_limpio.
+        columns:
+          - name: cliente_id
+          - name: ci_ruc
+          - name: nombre
+          - name: celular
+          - name: mail
+
+      - name: clientes_mapeo
+        description: >
+          Mapeo de cliente_id de origen a cliente_id_limpio. Hoy generado
+          por scripts-sql-ahorrazo/prod/clientes_mapeo_limpio.sql (single
+          point of failure del portfolio — ver §1). Se migra a
+          int_clientes_mapeo_limpio en Fase 2; hasta entonces sigue siendo
+          fuente (tabla generada por el proceso legacy).
+        columns:
+          - name: cliente_id
+          - name: cliente_id_limpio
+
+      - name: clientes_limpio
+        description: Datos descriptivos del cliente (nombre, ci_ruc) por cliente_id_limpio. Mismo origen/plan de migración que clientes_mapeo.
+        columns:
+          - name: cliente_id_limpio
+          - name: nombre
+          - name: ci_ruc
+
+      - name: productos
+        description: Catálogo de productos, usado para filtrar por empresa y excluir categorías (bolsas, egresos, servicios) vía int_ventas_elegibles.
+        columns:
+          - name: producto_id
+          - name: id_empresa
+          - name: categoria_1
+          - name: categoria_2

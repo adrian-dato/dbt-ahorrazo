@@ -1,0 +1,55 @@
+name: 'dbt_ahorrazo'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_ahorrazo'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Repo compartido por los 3 proyectos del portfolio (ver
+# PLAN_MAESTRO_REINGENIERIA.md en la raíz de proyectos/). staging/ e
+# intermediate/ son de fuente única, consumidos por los 3 marts.
+# Cada modelo de marts/<proyecto> se tagea con el nombre del proyecto
+# para poder correr `dbt build --select tag:<proyecto>` desde el DAG
+# de Airflow correspondiente, sin acoplar los 3 pipelines entre sí.
+vars:
+  # Canibalización — coincide con @meses = 36 en proc_1_36m.sql (legacy)
+  meses_ventana_canibalizacion: 36
+  dias_lookback_incremental: 45
+
+  # Top 300 — ventana móvil del ranking
+  top300_ventana_meses: 12
+  top300_peso_ventas: 0.40
+  top300_peso_tickets: 0.30
+  top300_peso_unidades_dia: 0.20
+  top300_peso_unidades_ticket: 0.10
+  top300_umbral_ventas_gs: 5000000
+
+  # Mayoristas — ventana de la vista RFM (reemplaza view_ventas_ahorrazo_filtradas_12m)
+  meses_ventana_mayoristas: 12
+
+models:
+  dbt_ahorrazo:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: incremental
+    marts:
+      canibalizacion:
+        +materialized: table
+        +tags: ["canibalizacion"]
+      top_300:
+        +materialized: table
+        +tags: ["top_300"]
+      mayoristas:
+        +materialized: table
+        +tags: ["mayoristas"]

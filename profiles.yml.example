@@ -1,0 +1,35 @@
+# Copiar a ~/.dbt/profiles.yml (o pasar --profiles-dir apuntando a este
+# archivo). No contiene secretos: las credenciales se leen de las mismas
+# variables de entorno que ya usa conexion_bd.py en los otros repos del
+# portfolio (ver .env.example). Requiere el paquete `dbt-sqlserver`
+# instalado en el mismo entorno WSL donde corre Airflow.
+
+dbt_ahorrazo:
+  target: dev
+  outputs:
+
+    # Target de desarrollo: schema aislado, para iterar sin tocar las
+    # tablas de producción que hoy consumen los 3 proyectos + Power BI.
+    dev:
+      type: sqlserver
+      driver: 'ODBC Driver 17 for SQL Server'
+      server: "{{ env_var('DB_SERVER') }}"
+      database: "{{ env_var('DB_DATABASE') }}"
+      schema: dbt_dev
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      port: 1433
+      threads: 4
+
+    # Target de producción: NO usar hasta pasar la Fase 6 (validación en
+    # paralelo) de cada proyecto y tener el cutover aprobado.
+    prod:
+      type: sqlserver
+      driver: 'ODBC Driver 17 for SQL Server'
+      server: "{{ env_var('DB_SERVER') }}"
+      database: "{{ env_var('DB_DATABASE') }}"
+      schema: dbo
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      port: 1433
+      threads: 4
