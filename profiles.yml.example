@@ -1,8 +1,12 @@
-# Copiar a ~/.dbt/profiles.yml (o pasar --profiles-dir apuntando a este
-# archivo). No contiene secretos: las credenciales se leen de las mismas
-# variables de entorno que ya usa conexion_bd.py en los otros repos del
-# portfolio (ver .env.example). Requiere el paquete `dbt-sqlserver`
+# Copiar a profiles.yml, en esta misma carpeta (ya gitignorado). No
+# contiene secretos: las credenciales se leen de las mismas variables de
+# entorno que ya usa conexion_bd.py en los otros repos del portfolio
+# (ver .env.example en esta carpeta). Requiere el paquete `dbt-sqlserver`
 # instalado en el mismo entorno WSL donde corre Airflow.
+#
+# Como profiles.yml vive acá y no en ~/.dbt/, hay que decirle a dbt
+# dónde buscarlo -- ver README.md ("Setup local") para el comando
+# completo (DBT_PROFILES_DIR + cargar .env antes de correr dbt).
 
 dbt_ahorrazo:
   target: dev

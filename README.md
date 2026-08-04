@@ -66,11 +66,31 @@ tiene un `README.md` con el detalle de qué falta y en qué fase.
 
 1. Instalar `dbt-core` + `dbt-sqlserver` en el mismo entorno (WSL) donde
    corre Airflow.
-2. Copiar `profiles.yml.example` a `~/.dbt/profiles.yml`, completar las
-   variables de entorno (`DB_SERVER`, `DB_DATABASE`, `DB_USER`,
-   `DB_PASSWORD`) — mismo patrón que `.env` en los otros repos del
-   portfolio, nunca credenciales en texto plano en el repo.
-3. `dbt debug` para validar la conexión contra el schema `dbt_dev`.
+2. Copiar `profiles.yml.example` a `profiles.yml` (mismo directorio, raíz
+   del repo -- ya está en `.gitignore`, nunca se commitea, igual que
+   `.env`).
+3. Crear `.env` en la raíz del repo con `DB_SERVER`, `DB_DATABASE`,
+   `DB_USER`, `DB_PASSWORD` (mismos nombres que ya usa `conexion_bd.py`
+   en los otros repos del portfolio).
+4. `profiles.yml` vive junto al proyecto, no en `~/.dbt/` -- hay que
+   decirle a dbt que busque ahí con `DBT_PROFILES_DIR`. Antes de correr
+   cualquier comando dbt:
+
+   ```bash
+   cd dbt_ahorrazo
+   set -a && source .env && set +a
+   export DBT_PROFILES_DIR=$(pwd)
+   dbt debug
+   ```
+
+   Con `.env` y `profiles.yml` en la misma carpeta que el resto del
+   proyecto (ambos gitignorados), copiar el repo entero a otro server
+   (scp/rsync después de un `git pull`) alcanza para que dbt funcione ahí
+   también -- no hace falta recrear nada por separado en `~/.dbt/`.
+   Si en algún momento se corre desde Airflow (Fase 5), setear
+   `DBT_PROFILES_DIR` como variable de entorno de la tarea (o, mejor
+   todavía en ese momento, migrar las credenciales a Airflow Connections
+   en vez de a este `.env` -- ver plan maestro, sección de secretos).
 
 ## Convenciones de nombres
 
