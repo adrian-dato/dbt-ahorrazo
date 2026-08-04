@@ -38,19 +38,29 @@ Contexto completo, diagnóstico y plan de fases:
 
 ## Estado
 
-**Fase 1 (fundación) en curso.** Ya portado desde `canibalizacion_ahorrazo`
+**Fase 1 (fundación) — hecha.** Portado desde `canibalizacion_ahorrazo`
 (la implementación más madura del portfolio, sin cambios de lógica salvo
 el renombre de la var `meses_ventana` -> `meses_ventana_canibalizacion`):
 `stg_ventas`, `stg_productos`, `stg_clientes_mapeo`, `stg_clientes_limpio`,
 `fct_ventas_36m`, y el seed `dim_sucursal_mapeo`. Nuevo en este repo:
-`stg_clientes` (sobre `dbo.Clientes`), insumo de la Fase 2.
+`stg_clientes` (sobre `dbo.Clientes`). Pendiente de este repo (no de
+código): correr `dbt debug`/`dbt build` contra la base real para
+confirmar la estrategia incremental en este entorno puntual — requiere
+credenciales y el driver ODBC instalado, fuera del alcance de lo que se
+puede validar sin acceso al server.
 
-**Sin lógica de negocio compartida todavía**: portar `clientes_mapeo_limpio`
-(Fase 2) y las reglas de exclusión (Fase 3) requiere validación regla por
-regla contra la base real antes de programarse — hoy `fct_ventas_36m`
-sigue con las reglas de exclusión inline (heredadas del proc original),
-no vía `int_ventas_elegibles`. Cada carpeta de `models/` tiene un
-`README.md` con el detalle de qué falta y en qué fase.
+**Fase 2 (migrar `clientes_mapeo_limpio`) — modelos hechos, validación
+pendiente.** `int_clientes_normalizados`, `int_clientes_mapeo_limpio`
+(incremental) e `int_clientes_limpio` (`table`) ya están escritos,
+portando regla por regla la limpieza de `dbo.Clientes` del proceso
+legacy (ver `models/intermediate/README.md`). **Corren en paralelo al
+proceso legacy** — `stg_clientes_mapeo`/`stg_clientes_limpio` siguen
+apuntando a las tablas viejas hasta validar con
+`analyses/validar_clientes_mapeo_limpio.sql` que el resultado coincide.
+
+**Pendiente**: reglas de exclusión compartidas (Fase 3, `int_ventas_elegibles`)
+y el resto de los marts por proyecto (Fase 4). Cada carpeta de `models/`
+tiene un `README.md` con el detalle de qué falta y en qué fase.
 
 ## Setup local
 

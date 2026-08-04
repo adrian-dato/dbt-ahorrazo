@@ -42,7 +42,10 @@ models:
     staging:
       +materialized: view
     intermediate:
-      +materialized: incremental
+      # Sin default: no todos los modelos de intermediate/ tocan la
+      # fact de 238M+ filas (ej. la dimensión de clientes es chica y
+      # alcanza con `table`) -- cada modelo declara su propia
+      # materialización con {{ config(...) }}.
     marts:
       canibalizacion:
         +materialized: table

@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: int_clientes_normalizados
+    description: Limpieza de dbo.Clientes (equivalente KNIME), calculada una sola vez. Insumo de int_clientes_mapeo_limpio e int_clientes_limpio.
+    columns:
+      - name: cliente_id
+        tests:
+          - not_null
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+
+  - name: int_clientes_mapeo_limpio
+    description: >
+      Reemplaza dbo.clientes_mapeo (proceso legacy clientes_mapeo_limpio.sql).
+      Incremental, lookback de {{ var('dias_lookback_incremental') }} días
+      para detectar cliente_id nuevos en Ventas_Ahorrazo. Corre en paralelo
+      al proceso legacy -- todavía no lo reemplaza como source de ningún mart.
+    columns:
+      - name: cliente_id
+        tests:
+          - not_null
+          - unique
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+
+  - name: int_clientes_limpio
+    description: >
+      Reemplaza dbo.clientes_limpio (proceso legacy clientes_mapeo_limpio.sql).
+      Corre en paralelo al proceso legacy -- todavía no lo reemplaza como
+      source de ningún mart.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique
