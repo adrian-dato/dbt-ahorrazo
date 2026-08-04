@@ -16,8 +16,7 @@ sources:
     tables:
       - name: Ventas_Ahorrazo
         description: >
-          Fact de ventas transaccional, 238M+ filas (confirmado en el
-          perfilado de canibalizacion_ahorrazo). HEAP sin Columnstore
+          Fact de ventas transaccional, 238M+ filas. HEAP sin Columnstore
           Index — fix candidato en Fase 0, independiente de dbt.
         columns:
           - name: cliente_id
