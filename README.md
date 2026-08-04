@@ -38,16 +38,21 @@ Contexto completo, diagnóstico y plan de fases:
 
 ## Estado
 
-**Fase 1 (fundación) — hecha.** Portado desde `canibalizacion_ahorrazo`
-(la implementación más madura del portfolio, sin cambios de lógica salvo
-el renombre de la var `meses_ventana` -> `meses_ventana_canibalizacion`):
-`stg_ventas`, `stg_productos`, `stg_clientes_mapeo`, `stg_clientes_limpio`,
+**Fase 1 (fundación) — hecha y validada contra la base real.** Portado
+desde `canibalizacion_ahorrazo` (la implementación más madura del
+portfolio, sin cambios de lógica salvo el renombre de la var
+`meses_ventana` -> `meses_ventana_canibalizacion`): `stg_ventas`,
+`stg_productos`, `stg_clientes_mapeo`, `stg_clientes_limpio`,
 `fct_ventas_36m`, y el seed `dim_sucursal_mapeo`. Nuevo en este repo:
-`stg_clientes` (sobre `dbo.Clientes`). Pendiente de este repo (no de
-código): correr `dbt debug`/`dbt build` contra la base real para
-confirmar la estrategia incremental en este entorno puntual — requiere
-credenciales y el driver ODBC instalado, fuera del alcance de lo que se
-puede validar sin acceso al server.
+`stg_clientes` (sobre `dbo.Clientes`). `dbt build --select staging
+fct_ventas_36m` corre limpio de punta a punta contra la base real
+(20/20 tests, `fct_ventas_36m` construido en `dbt_dev`) -- confirma que
+la estrategia incremental (`delete+insert`) y el adaptador
+`dbt-sqlserver` funcionan en este entorno puntual. En el camino se
+encontraron y resolvieron dos cosas reales: el server usa certificado
+autofirmado (hace falta `trust_cert: true`, ver `profiles.yml.example`)
+y `Ventas_Ahorrazo` tenía 2 filas con `cliente_id` NULL (ventas de
+mostrador anónimas, ya excluidas en `stg_ventas`).
 
 **Fase 2 (migrar `clientes_mapeo_limpio`) — modelos hechos, validación
 pendiente.** `int_clientes_normalizados`, `int_clientes_mapeo_limpio`
@@ -64,33 +69,36 @@ tiene un `README.md` con el detalle de qué falta y en qué fase.
 
 ## Setup local
 
-1. Instalar `dbt-core` + `dbt-sqlserver` en el mismo entorno (WSL) donde
-   corre Airflow.
-2. Copiar `profiles.yml.example` a `profiles.yml` (mismo directorio, raíz
-   del repo -- ya está en `.gitignore`, nunca se commitea, igual que
-   `.env`).
-3. Crear `.env` en la raíz del repo con `DB_SERVER`, `DB_DATABASE`,
-   `DB_USER`, `DB_PASSWORD` (mismos nombres que ya usa `conexion_bd.py`
-   en los otros repos del portfolio).
+Validado de punta a punta (conexión real + build real) desde una compu
+local con Python 3.12 + Git Bash, conectada por VPN al server:
+
+1. `python -m venv .venv` (usar 3.12/3.13 -- dbt todavía no soporta bien
+   versiones muy nuevas de Python; en Windows con varias versiones
+   instaladas, `py -3.12 -m venv .venv`).
+2. `source .venv/Scripts/activate` (Windows: `Scripts/`, no `bin/`) y
+   `pip install -r requirements.txt` (instala `dbt-core` + `dbt-sqlserver`
+   + `pyodbc`).
+3. Copiar `profiles.yml.example` a `profiles.yml` y crear `.env` (mismos
+   nombres de variable que ya usa `conexion_bd.py` en los otros repos del
+   portfolio: `DB_SERVER`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) --
+   ambos en la raíz del repo, ya gitignorados.
 4. `profiles.yml` vive junto al proyecto, no en `~/.dbt/` -- hay que
-   decirle a dbt que busque ahí con `DBT_PROFILES_DIR`. Antes de correr
-   cualquier comando dbt:
+   decirle a dbt que busque ahí con `DBT_PROFILES_DIR`. `source activar.sh`
+   hace esto (y activa el venv y carga `.env`) en un solo paso -- ver
+   `activar.sh` si hace falta adaptarlo a otro entorno (ej. WSL).
+5. `dbt debug` para confirmar la conexión.
 
-   ```bash
-   cd dbt_ahorrazo
-   set -a && source .env && set +a
-   export DBT_PROFILES_DIR=$(pwd)
-   dbt debug
-   ```
+Para la lista completa de comandos (correr modelos, tests, analyses,
+selectors, `--full-refresh`), ver **[`COMANDOS.md`](COMANDOS.md)**.
 
-   Con `.env` y `profiles.yml` en la misma carpeta que el resto del
-   proyecto (ambos gitignorados), copiar el repo entero a otro server
-   (scp/rsync después de un `git pull`) alcanza para que dbt funcione ahí
-   también -- no hace falta recrear nada por separado en `~/.dbt/`.
-   Si en algún momento se corre desde Airflow (Fase 5), setear
-   `DBT_PROFILES_DIR` como variable de entorno de la tarea (o, mejor
-   todavía en ese momento, migrar las credenciales a Airflow Connections
-   en vez de a este `.env` -- ver plan maestro, sección de secretos).
+Con `.env`/`profiles.yml` en la misma carpeta que el resto del proyecto
+(ambos gitignorados), copiar el repo entero a otro server (scp/rsync
+después de un `git pull`) alcanza para que dbt funcione ahí también --
+no hace falta recrear nada por separado en `~/.dbt/`. Si en algún
+momento se corre desde Airflow (Fase 5), setear `DBT_PROFILES_DIR` como
+variable de entorno de la tarea (o, mejor todavía en ese momento, migrar
+las credenciales a Airflow Connections en vez de a este `.env` -- ver
+plan maestro, sección de secretos).
 
 ## Convenciones de nombres
 
