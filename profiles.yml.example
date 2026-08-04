@@ -24,6 +24,14 @@ dbt_ahorrazo:
       password: "{{ env_var('DB_PASSWORD') }}"
       port: 1433
       threads: 4
+      # El server usa certificado autofirmado (no emitido por una CA
+      # reconocida) -- sin esto, dbt-sqlserver falla el handshake TLS
+      # ("certificate chain was issued by an authority that is not
+      # trusted"). trust_cert sigue encriptando el tráfico, solo deja de
+      # exigir que el certificado esté firmado por una CA. conexion_bd.py
+      # no se topa con esto porque su cadena de conexión no fuerza
+      # encriptación explícita -- dbt-sqlserver sí, por default.
+      trust_cert: true
 
     # Target de producción: NO usar hasta pasar la Fase 6 (validación en
     # paralelo) de cada proyecto y tener el cutover aprobado.
@@ -37,3 +45,11 @@ dbt_ahorrazo:
       password: "{{ env_var('DB_PASSWORD') }}"
       port: 1433
       threads: 4
+      # El server usa certificado autofirmado (no emitido por una CA
+      # reconocida) -- sin esto, dbt-sqlserver falla el handshake TLS
+      # ("certificate chain was issued by an authority that is not
+      # trusted"). trust_cert sigue encriptando el tráfico, solo deja de
+      # exigir que el certificado esté firmado por una CA. conexion_bd.py
+      # no se topa con esto porque su cadena de conexión no fuerza
+      # encriptación explícita -- dbt-sqlserver sí, por default.
+      trust_cert: true
