@@ -5,13 +5,17 @@ Reemplaza la cadena `proc_1_36m.sql` → `proc_2_36m.sql` →
 `propuesta_reingenieria_pipeline.md` en ese repo para el detalle completo
 (es el proyecto más avanzado del portfolio — sirve de referencia).
 
-`fct_ventas_36m` ya está construido y testeado en `canibalizacion_ahorrazo/models/marts/`;
-se porta a este repo en Fase 1 (fundación), junto con `stg_ventas`,
-`stg_productos` y `stg_clientes_mapeo`.
+`fct_ventas_36m` -- portado (Fase 1). Idéntico en lógica al original de
+`canibalizacion_ahorrazo/models/marts/`, con un solo cambio: la var
+`meses_ventana` pasó a llamarse `meses_ventana_canibalizacion` para no
+chocar con las vars de los otros proyectos en el `dbt_project.yml`
+compartido. Las reglas de exclusión (`id_empresa`, `bolsa`, `egre`/`servi`,
+cliente de test) siguen inline por ahora -- se mueven a
+`ref('int_ventas_elegibles')` recién en Fase 3.
 
 Pendientes (Fase 4.1 de `PLAN_MAESTRO_REINGENIERIA.md`):
 - `fct_ventas_36m_pivotado.sql` — usa el seed `dim_sucursal_mapeo`
-  (ya existe en `canibalizacion_ahorrazo/seeds/`) en vez del
+  (ya portado a `seeds/`) en vez del
   `PIVOT ... FOR pdv_id IN ([3],[5],[6])` hardcodeado.
 - `dim_cliente_tipo_migracion.sql` — traduce `_conditions()`
   (el `df.apply(axis=1)` del notebook actual) a `LAG()`/window functions.

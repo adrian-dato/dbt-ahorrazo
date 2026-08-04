@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: fct_ventas_36m
+    description: >
+      Reemplaza proc_1_36m.sql. Ventas agrupadas por cliente/producto/pdv/
+      año/mes de los últimos {{ var('meses_ventana_canibalizacion') }} meses.
+      Incremental (delete+insert), lookback de
+      {{ var('dias_lookback_incremental') }} días en corridas normales.
+    columns:
+      - name: cliente_id_limpio
+        description: Identificador de cliente normalizado.
+        tests:
+          - not_null
+      - name: producto_id
+        tests:
+          - not_null
+      - name: pdv_id
+        tests:
+          - not_null
+      - name: anio
+        tests:
+          - not_null
+      - name: mes
+        tests:
+          - not_null
+      - name: total_ventas
+        tests:
+          - not_null

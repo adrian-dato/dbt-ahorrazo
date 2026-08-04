@@ -38,11 +38,18 @@ Contexto completo, diagnóstico y plan de fases:
 
 ## Estado
 
-Scaffold inicial (Fase 1 de `PLAN_MAESTRO_REINGENIERIA.md`) — estructura
-de carpetas, configuración de dbt, y `sources.yml` consolidado. **Sin
-lógica de negocio todavía**: portar `clientes_mapeo_limpio` (Fase 2) y las
-reglas de exclusión (Fase 3) requiere validación regla por regla contra
-la base real antes de programarse. Cada carpeta de `models/` tiene un
+**Fase 1 (fundación) en curso.** Ya portado desde `canibalizacion_ahorrazo`
+(la implementación más madura del portfolio, sin cambios de lógica salvo
+el renombre de la var `meses_ventana` -> `meses_ventana_canibalizacion`):
+`stg_ventas`, `stg_productos`, `stg_clientes_mapeo`, `stg_clientes_limpio`,
+`fct_ventas_36m`, y el seed `dim_sucursal_mapeo`. Nuevo en este repo:
+`stg_clientes` (sobre `dbo.Clientes`), insumo de la Fase 2.
+
+**Sin lógica de negocio compartida todavía**: portar `clientes_mapeo_limpio`
+(Fase 2) y las reglas de exclusión (Fase 3) requiere validación regla por
+regla contra la base real antes de programarse — hoy `fct_ventas_36m`
+sigue con las reglas de exclusión inline (heredadas del proc original),
+no vía `int_ventas_elegibles`. Cada carpeta de `models/` tiene un
 `README.md` con el detalle de qué falta y en qué fase.
 
 ## Setup local

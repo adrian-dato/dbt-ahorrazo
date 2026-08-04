@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_clientes_mapeo
+    description: Mapeo cliente_id -> cliente_id_limpio, tal como lo publica hoy el proceso legacy. Se reemplaza de fuente en Fase 2 (int_clientes_mapeo_limpio).
+    columns:
+      - name: cliente_id
+        tests:
+          - not_null
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+
+  - name: stg_productos
+    columns:
+      - name: producto_id
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_ventas
+    columns:
+      - name: cliente_id
+        tests:
+          - not_null
+      - name: producto_id
+        tests:
+          - not_null
+
+  - name: stg_clientes_limpio
+    description: Dimensión por cliente_id_limpio, tal como la publica hoy el proceso legacy. Se reemplaza de fuente en Fase 2 (int_clientes_mapeo_limpio).
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+
+  - name: stg_clientes
+    description: 1:1 sobre dbo.Clientes (tabla cruda). Insumo de int_clientes_mapeo_limpio (Fase 2), no consumido directamente por ningún mart todavía.
+    columns:
+      - name: cliente_id
+        tests:
+          - not_null
