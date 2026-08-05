@@ -176,6 +176,17 @@ tomadas en el camino" abajo).
   pero hay que confirmar el mapeo de consumidores antes de decidir
   (mismo paso que ya se documentó como obligatorio en el plan maestro
   antes de cualquier cutover).
+- **Trabajo hecho FUERA de este repo, en `analisis_mayorista` (repo
+  separado, commit `3f956fb`)**: se reescribieron `analisis_mayoristas.py`
+  (ahora sí espejo fiel de `usado.ipynb`/v1 -- el archivo viejo agrupaba
+  por `cliente_id` crudo, no `cliente_id_limpio`, un bug real que
+  perdía la deduplicación) y se agregó `analisis_mayoristas_v2.py`
+  (espejo del notebook v2, portado acá a `dim_clientes_mayoristas`).
+  También se agregó `engine_sqlalchemy_bd()`/`escribir_tabla_segura()`
+  a `conexion_bd.py` de ese repo (no existía motor de escritura seguro
+  ahí -- mismo patrón que ya tenían `canibalizacion_ahorrazo`/`top_300_productos`).
+  Ninguno de los dos scripts nuevos escribe a SQL por default (flag
+  `--escribir-sql` explícito) -- no se tocó la tabla de producción.
 
 ---
 
