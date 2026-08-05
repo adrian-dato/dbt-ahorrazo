@@ -164,6 +164,18 @@ tomadas en el camino" abajo).
 - [ ] Pendiente, fuera de este repo: portar `clasificar_nivel()` original
   (ahora redundante si el SQL de acá se valida) o simplemente decomisionar
   esa parte del notebook en `analisis_mayorista` durante Fase 6.
+- **Confirmado con el usuario**: `analisis_mayoristas_usado.ipynb` (el
+  que corre hoy en producción) es la lógica **v1** (ML: `KMeans`,
+  `IsolationForest`, `mayorista_score` con umbral fijo 70), NO una
+  variante de v2 -- escribe a `dbo.clientes_mayoristas` (sin sufijo).
+  `analisis_mayoristas_v2.ipynb` (la que se portó acá) escribe a
+  `dbo.clientes_mayoristas_v2`. **Decisión pendiente para Fase 6**: a
+  cuál de los dos nombres apunta finalmente `dim_clientes_mayoristas`
+  -- probablemente `clientes_mayoristas` (sin sufijo), ya que es el que
+  en producción hoy probablemente leen dashboards/otros consumidores,
+  pero hay que confirmar el mapeo de consumidores antes de decidir
+  (mismo paso que ya se documentó como obligatorio en el plan maestro
+  antes de cualquier cutover).
 
 ---
 
