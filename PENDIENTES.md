@@ -28,9 +28,20 @@ completo por fases.
 
 ## Fase 4 — marts por proyecto
 
-### Canibalización -- CONFIRMADO contra la base real (8/8, incluye accepted_values de los 16 tipo_cliente)
+### Canibalización
 - [x] `fct_ventas_36m_pivotado` -- construido y testeado.
 - [x] `dim_cliente_tipo_migracion` -- construido y testeado.
+- [ ] **REQUIERE RE-TEST**: se corrigió `fct_ventas_36m` para usar meses
+  cerrados (`fecha_corte_mes_cerrado()`) en vez de `getdate()` directo
+  como límite superior -- antes mezclaba el mes en curso (parcial) con
+  meses ya cerrados. Es incremental, así que el cambio de lógica no se
+  aplica solo con un build normal, hace falta:
+  ```
+  dbt build --select fct_ventas_36m --full-refresh
+  dbt build --select fct_ventas_36m_pivotado dim_cliente_tipo_migracion
+  ```
+  (pivotado y tipo_migracion son `table`, se reconstruyen solos al
+  correrlos de nuevo, no necesitan `--full-refresh`).
   **DECISIÓN QUE NECESITA CONFIRMACIÓN DE NEGOCIO ANTES DE FASE 6**:
   el legacy (`_conditions()` en el notebook) tiene un bug real -- la
   categoría "Cliente SL, R1 y R2" chequea `R1_acumulado` dos veces y
@@ -50,6 +61,8 @@ completo por fases.
   COMPARTIDA con Mayoristas -- antes cada proyecto la hubiera calculado
   por separado, ahora es un solo modelo en `intermediate/`). Top 300 ya
   consume este modelo, no filtra por su cuenta.
+- [x] `int_ventas_12m` usa meses cerrados (`fecha_corte_mes_cerrado()`)
+  -- es `view`, no incremental, el fix ya aplica solo con correr de nuevo.
 - [ ] Sin correr todavía contra la base real (`dbt build --select
   +top300_ranking` -- vuelve a re-scanear Ventas_Ahorrazo por las
   columnas nuevas de stg_ventas, no debería ser tan largo como el

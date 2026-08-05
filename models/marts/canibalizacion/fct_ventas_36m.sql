@@ -15,6 +15,13 @@
 -- que en el proc original (portado 1:1). Se reemplazan por
 -- ref('int_ventas_elegibles') en la Fase 3, cuando ese modelo compartido
 -- exista -- no se duplica la lógica mientras tanto, se marca acá.
+--
+-- Ventana en MESES CERRADOS (corregido -- antes usaba getdate() directo
+-- como límite superior, mezclando el mes en curso, parcial, con meses ya
+-- cerrados). Mismo criterio que int_ventas_12m/fecha_corte_mes_cerrado().
+-- El lookback de abajo (dias_lookback_incremental) es un mecanismo
+-- distinto -- cuánto reprocesar para capturar datos que llegan tarde --,
+-- no la ventana de reporte en sí, y sigue usando getdate() a propósito.
 
 {{
     config(
@@ -35,8 +42,8 @@ productos as (
 ventas as (
     select *
     from {{ ref('stg_ventas') }}
-    where fecha_venta >= dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, getdate())
-      and fecha_venta <  getdate()
+    where fecha_venta >= dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})
+      and fecha_venta <  {{ fecha_corte_mes_cerrado() }}
       {% if is_incremental() %}
       -- Lookback: cubre datos que llegan tarde al mes en curso o al
       -- anterior, sin reprocesar los 36 meses completos en cada corrida.
