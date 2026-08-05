@@ -39,6 +39,17 @@ vars:
   top300_peso_unidades_ticket: 0.10
   top300_umbral_ventas_gs: 5000000
 
+# Sin esto, dbt infiere producto_id como int a partir del CSV (todo
+# dígitos) -- y como producto_id real en la base no es puramente
+# numérico ("1685-G", ni cabe siempre en int, ej. "7506295378"), un JOIN
+# contra esa columna int explota (SQL Server intenta convertir el otro
+# lado a int primero, por precedencia de tipos). Ver stg_ventas.sql.
+seeds:
+  dbt_ahorrazo:
+    productos_excluidos:
+      +column_types:
+        producto_id: varchar(50)
+
 models:
   dbt_ahorrazo:
     staging:

@@ -9,9 +9,18 @@
 -- atribuirlas, y el INNER JOIN de fct_ventas_36m las descartaría de
 -- todas formas. Se filtra acá, explícito, en vez de dejar que el join
 -- las descarte en silencio más abajo.
+--
+-- producto_id casteado a varchar: confirmado con datos reales que no es
+-- puramente numérico ("1685-G") y que hay valores que exceden el rango
+-- de int (ej. "7506295378") -- sin este cast, un JOIN contra cualquier
+-- columna int (ej. un seed con producto_id inferido como int) hace que
+-- SQL Server intente convertir ESTE lado a int primero (por precedencia
+-- de tipos) y explota en cualquier fila con letras o números grandes,
+-- aunque esa fila nunca fuera a matchear nada. Mismo criterio que ya
+-- usa el legacy (CAST(producto_id AS varchar(100)) en varios scripts).
 select
     cliente_id,
-    producto_id,
+    cast(producto_id as varchar(100)) as producto_id,
     pdv_id,
     fecha_venta,
     venta_gs,
