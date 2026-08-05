@@ -13,6 +13,13 @@
 -- diferencia sutil que este campo (el más "verboso" de la limpieza) no
 -- puede permitirse. No decomisionar esta función al apagar el resto del
 -- stored proc legacy.
+--
+-- cliente_id_limpio puede salir NULL: pasa cuando el cliente_id original
+-- no tenía ningún dígito (ej. quedó cargado un nombre de persona en vez
+-- de un documento -- "ABRAHAM", "SIN NOMBRE"). Son clientes no
+-- identificables -- decisión de negocio es excluirlos de la
+-- segmentación, no inventarles un id (ver derivar_cliente_id_limpio).
+-- int_clientes_limpio ya filtra esto; int_clientes_mapeo_limpio también.
 
 with normalizado as (
     select
@@ -20,16 +27,16 @@ with normalizado as (
         ci_ruc,
         celular,
         mail,
-        dbo.fn_nombre_limpio(nombre)            as nombre_limpio,
-        {{ limpiar_id('cliente_id') }}          as cliente_id_clean,
-        {{ limpiar_id("isnull(ci_ruc, N'')") }} as ci_ruc_clean
+        dbo.fn_nombre_limpio(nombre)                                       as nombre_limpio,
+        {{ recortar_basura_extremos(limpiar_id('cliente_id')) }}          as cliente_id_clean,
+        {{ limpiar_id("isnull(ci_ruc, N'')") }}                            as ci_ruc_clean
     from {{ ref('stg_clientes') }}
 )
 
 select
     cliente_id,
     cliente_id_clean,
-    {{ derivar_cliente_id_limpio('cliente_id', 'cliente_id_clean') }} as cliente_id_limpio,
+    {{ derivar_cliente_id_limpio('cliente_id_clean') }} as cliente_id_limpio,
     ci_ruc_clean,
     nombre_limpio,
     celular,

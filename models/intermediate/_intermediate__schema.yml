@@ -2,12 +2,14 @@ version: 2
 
 models:
   - name: int_clientes_normalizados
-    description: Limpieza de dbo.Clientes (equivalente KNIME), calculada una sola vez. Insumo de int_clientes_mapeo_limpio e int_clientes_limpio.
+    description: >
+      Limpieza de dbo.Clientes (equivalente KNIME), calculada una sola vez.
+      Insumo de int_clientes_mapeo_limpio e int_clientes_limpio.
+      cliente_id_limpio puede ser NULL acá (cliente no identificable, ej.
+      un nombre de persona en vez de un documento) -- el filtro que excluye
+      esos casos vive en los modelos consumidores, no acá.
     columns:
       - name: cliente_id
-        tests:
-          - not_null
-      - name: cliente_id_limpio
         tests:
           - not_null
 
@@ -15,8 +17,10 @@ models:
     description: >
       Reemplaza dbo.clientes_mapeo (proceso legacy clientes_mapeo_limpio.sql).
       Incremental, lookback de {{ var('dias_lookback_incremental') }} días
-      para detectar cliente_id nuevos en Ventas_Ahorrazo. Corre en paralelo
-      al proceso legacy -- todavía no lo reemplaza como source de ningún mart.
+      para detectar cliente_id nuevos en Ventas_Ahorrazo. Excluye clientes
+      no identificables (cliente_id sin ningún dígito) -- no aparecen en
+      esta tabla ni con cliente_id_limpio NULL. Corre en paralelo al
+      proceso legacy -- todavía no lo reemplaza como source de ningún mart.
     columns:
       - name: cliente_id
         tests:
@@ -29,10 +33,26 @@ models:
   - name: int_clientes_limpio
     description: >
       Reemplaza dbo.clientes_limpio (proceso legacy clientes_mapeo_limpio.sql).
-      Corre en paralelo al proceso legacy -- todavía no lo reemplaza como
-      source de ningún mart.
+      Excluye clientes no identificables, mismo criterio que
+      int_clientes_mapeo_limpio. Corre en paralelo al proceso legacy --
+      todavía no lo reemplaza como source de ningún mart.
     columns:
       - name: cliente_id_limpio
         tests:
           - not_null
           - unique
+
+  - name: int_ventas_elegibles
+    description: >
+      Única fuente de verdad de "venta válida para análisis" -- unifica
+      las reglas de exclusión (empresa, categoría, cliente de test,
+      producto excluido) que antes vivían duplicadas en 3 lugares
+      distintos entre los 3 proyectos. Usa stg_clientes_mapeo (legacy),
+      no int_clientes_mapeo_limpio todavía -- ver PENDIENTES.md.
+    columns:
+      - name: producto_id
+        tests:
+          - not_null
+      - name: pdv_id
+        tests:
+          - not_null

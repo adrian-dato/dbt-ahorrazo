@@ -33,9 +33,23 @@
 -- unique_key = cliente_id: 1 fila por cliente_id, igual que el índice
 -- único CX_clientes_mapeo_cliente_id del proceso legacy.
 --
+-- Diferencias INTENCIONALES respecto al legacy (encontradas perfilando
+-- datos reales, ver derivar_cliente_id_limpio y recortar_basura_extremos):
+--   - Símbolos sueltos al principio/final del id (ej. '|') se sacan --
+--     el legacy prometía esto en un comentario pero nunca lo hacía.
+--   - Cualquier símbolo (no solo '-'/'*') seguido de un solo dígito al
+--     final se trata como separador de RUC (ej. "3891542,1" -> "3891542").
+--   - Clientes cuyo cliente_id no tiene ningún dígito (quedó cargado un
+--     nombre de persona) se EXCLUYEN -- el legacy los dejaba adentro
+--     usando el nombre como si fuera un id, mezclando clientes distintos
+--     que comparten el mismo nombre/placeholder.
+-- Por esto NO se espera que analyses/validar_clientes_mapeo_limpio.sql
+-- dé cero diferencias -- ver ese archivo para qué diferencias son
+-- esperadas (mejoras) vs. cuáles habría que investigar.
+--
 -- Nota: todavía NO reemplaza a stg_clientes_mapeo -- corre en paralelo
--- al proceso legacy hasta validar (ver analyses/validar_clientes_mapeo_limpio.sql)
--- que produce el mismo resultado, antes de que cualquier mart lo consuma.
+-- al proceso legacy hasta validar que las diferencias que aparecen son
+-- las esperadas, antes de que cualquier mart lo consuma.
 
 {{
     config(
@@ -76,14 +90,14 @@ ventas_huerfanas as (
 ventas_normalizadas as (
     select
         cliente_id,
-        {{ limpiar_id('cliente_id') }} as cliente_id_clean
+        {{ recortar_basura_extremos(limpiar_id('cliente_id')) }} as cliente_id_clean
     from ventas_huerfanas
 ),
 
 ventas_mapeadas as (
     select distinct
         cliente_id,
-        {{ derivar_cliente_id_limpio('cliente_id', 'cliente_id_clean') }} as cliente_id_limpio
+        {{ derivar_cliente_id_limpio('cliente_id_clean') }} as cliente_id_limpio
     from ventas_normalizadas
 ),
 
@@ -95,8 +109,13 @@ union_completo as (
 
 -- Paso C: dedup determinístico -- 1 fila por cliente_id (mismo criterio
 -- que el proceso legacy: MIN(cliente_id_limpio), no "el más reciente").
+--
+-- HAVING excluye clientes no identificables (cliente_id_limpio NULL en
+-- las dos fuentes que se unieron arriba -- ver derivar_cliente_id_limpio):
+-- no quedan en la tabla ni con un valor NULL, quedan afuera del todo.
 select
     cliente_id,
     min(cliente_id_limpio) as cliente_id_limpio
 from union_completo
 group by cliente_id
+having min(cliente_id_limpio) is not null
