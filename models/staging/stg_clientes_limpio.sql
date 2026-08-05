@@ -1,7 +1,7 @@
--- Fuente hoy: dbo.clientes_limpio generada por el proceso legacy
--- (clientes_mapeo_limpio.sql). Se reemplaza por
--- ref('int_clientes_mapeo_limpio') en la Fase 2.
+-- Fase 2 VALIDADA (ver PENDIENTES.md): repuntado de
+-- source('dato_solutions','clientes_limpio') (proceso legacy) a
+-- ref('int_clientes_limpio').
 select
     cliente_id_limpio,
     nombre
-from {{ source('dato_solutions', 'clientes_limpio') }}
+from {{ ref('int_clientes_limpio') }}

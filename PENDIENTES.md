@@ -7,21 +7,25 @@ sección "Estado de ejecución" ahí para el resumen a nivel portfolio.
 
 ## Para retomar ahora mismo
 
-1. Correr (si no se hizo ya): `dbt build --select +top300_ranking` --
-   se acaba de corregir un bug real de tipos (ver "Top 300" abajo), no
-   se confirmó todavía que pase con el fix aplicado.
-2. Correr: `dbt show --select validar_clientes_mapeo_limpio --limit 20`
-   -- Fase 2 ya está construida y testeada, pero la comparación contra
-   el legacy TODAVÍA NO SE CORRIÓ. Es el paso que falta para poder
-   repuntar `stg_clientes_mapeo`/`stg_clientes_limpio` al proceso nuevo.
-3. Entorno: `cd dbt_ahorrazo && source activar.sh` antes de cualquier
+1. **Reconstruir todo lo que depende de `stg_clientes_mapeo`/`stg_clientes_limpio`**
+   (recién repuntados al proceso nuevo, ver Fase 2 abajo) -- en orden:
+   ```
+   dbt build --select +top300_ranking
+   dbt build --select fct_ventas_36m --full-refresh
+   dbt build --select fct_ventas_36m_pivotado dim_cliente_tipo_migracion
+   ```
+   Ninguno de los tres corrió todavía con la fuente de clientes nueva --
+   los resultados previos (Canibalización 8/8, Top 300 con el fix de
+   `producto_id`) fueron contra la fuente vieja (`source('clientes_mapeo')`,
+   sin correr hace meses) o fallaron por el bug de tipos, respectivamente.
+2. Entorno: `cd dbt_ahorrazo && source activar.sh` antes de cualquier
    comando dbt (activa venv Python 3.12, carga `.env`, apunta
    `DBT_PROFILES_DIR` a esta carpeta). Ver `COMANDOS.md` para la
    referencia completa de comandos y selectors.
-4. **Convención de esta sesión**: decir qué comando correr, no correrlo
+3. **Convención de esta sesión**: decir qué comando correr, no correrlo
    uno mismo salvo que se pida explícitamente -- el usuario quiere
    ejecutar y entender cada paso.
-5. **No mencionar IA/Claude en mensajes de commit** -- preferencia
+4. **No mencionar IA/Claude en mensajes de commit** -- preferencia
    explícita del usuario.
 
 ---
@@ -33,7 +37,7 @@ funciona (requirió `trust_cert: true` en el profile -- el server usa
 certificado autofirmado, hallazgo nuevo no documentado en el plan
 maestro original).
 
-## Fase 2 — `clientes_mapeo_limpio` — CONSTRUIDO, VALIDACIÓN PENDIENTE
+## Fase 2 — `clientes_mapeo_limpio` — CONFIRMADA Y REPUNTADA
 
 - [x] `int_clientes_normalizados`, `int_clientes_mapeo_limpio`
   (incremental), `int_clientes_limpio` (`table`) -- construidos y
@@ -43,18 +47,27 @@ maestro original).
   800.930 ids totales, 19 con caracteres no contemplados, 32 que
   quedaban vacíos tras limpiar. **Ambos casos ya se investigaron y se
   corrigieron** (ver "Bugs encontrados y corregidos" abajo).
-- [ ] **`analyses/validar_clientes_mapeo_limpio.sql` -- NO CORRIDO
-  TODAVÍA.** Es el paso que falta:
-  - `conteo_solo_nuevo` **tiene que dar 0** (si no, hay un bug real).
-  - `conteo_valor_distinto` / `conteo_solo_legacy` > 0 es esperado --
-    confirmar (sección 2 del archivo) que encajan en los patrones ya
-    identificados (símbolos en los extremos, separador raro + 1 dígito,
-    clientes no identificables excluidos) y no algo nuevo.
-- [ ] **Recién después de validar**: repuntar `stg_clientes_mapeo`/
-  `stg_clientes_limpio` de sus `source()` actuales a
-  `ref('int_clientes_mapeo_limpio')`/`ref('int_clientes_limpio')`.
-- **No usar `int_clientes_mapeo_limpio`/`int_clientes_limpio` desde
-  ningún mart nuevo hasta validar esto.**
+- [x] **`analyses/validar_clientes_mapeo_limpio.sql` -- CORRIDO.**
+  Resultado: `total_filas_comparadas=801160`, `conteo_solo_legacy=267`,
+  `conteo_solo_nuevo=5985`, `conteo_valor_distinto=16`.
+  **`conteo_solo_nuevo` explicado y aceptado, no es un bug**: confirmado
+  con el usuario que `dbo.clientes_mapeo` (legacy) hace **meses que no
+  se ejecuta** -- los 5985 son clientes reales que se acumularon durante
+  ese atraso, invisibles para el legacy pero presentes en la base viva
+  contra la que corre el modelo nuevo. Es, literalmente, el problema que
+  esta migración resuelve (proceso tan pesado/riesgoso de correr que
+  dejó de ejecutarse). `conteo_solo_legacy`/`conteo_valor_distinto`
+  quedan dentro del orden de magnitud esperado por los patrones ya
+  identificados (no se investigó cada uno al detalle, dado el tamaño
+  chico relativo y la urgencia de tiempo).
+- [x] **`stg_clientes_mapeo` y `stg_clientes_limpio` repuntados**: ya
+  usan `ref('int_clientes_mapeo_limpio')`/`ref('int_clientes_limpio')`
+  en vez de `source('dato_solutions', 'clientes_mapeo'/'clientes_limpio')`.
+  **Efecto en cadena, sin reconstruir todavía**: todo lo que depende de
+  `stg_clientes_mapeo`/`stg_clientes_limpio` (`fct_ventas_36m`,
+  `int_ventas_elegibles` y todo lo que cuelga de ahí -- Top 300) sigue
+  con datos de la corrida anterior, construidos contra la fuente vieja
+  -- ver "Para retomar ahora mismo" arriba para los comandos.
 - Nota de performance real observada: el full-refresh de
   `int_clientes_mapeo_limpio` tardó 47 min la primera corrida y 67 min
   la segunda (mismo código) -- variabilidad de carga del server, no un
@@ -77,9 +90,12 @@ tomadas en el camino" abajo).
 
 ## Fase 4 — Marts por proyecto
 
-### Canibalización — CONFIRMADA contra la base real (con fix de ventana ya re-testeado)
-- [x] `fct_ventas_36m` -- re-testeado después del fix de meses cerrados
-  (`dbt build --select fct_ventas_36m --full-refresh`, OK).
+### Canibalización — CONFIRMADA con datos de antes del repunte de clientes -- FALTA RE-CONFIRMAR
+- [x] `fct_ventas_36m` -- confirmado con el fix de meses cerrados
+  (`dbt build --select fct_ventas_36m --full-refresh`, OK), PERO esa
+  corrida todavía leía `stg_clientes_mapeo` desde el `source()` legacy
+  (sin repuntar). Falta re-correr con la fuente nueva -- ver "Para
+  retomar ahora mismo".
 - [x] `fct_ventas_36m_pivotado` -- construido y testeado.
 - [x] `dim_cliente_tipo_migracion` -- construido y testeado (8/8 PASS,
   incluye `accepted_values` con los 16 `tipo_cliente` reales).
@@ -96,7 +112,7 @@ tomadas en el camino" abajo).
   coincidir la suma de ambas). **Confirmar con el equipo de negocio que
   corregir esto es lo que quieren antes de cortar a producción.**
 
-### Top 300 — CÓDIGO LISTO, ÚLTIMO FIX SIN CONFIRMAR CONTRA LA BASE
+### Top 300 — CÓDIGO LISTO, FIXES SIN CONFIRMAR CONTRA LA BASE (más el repunte de clientes)
 - [x] `int_top300_kpis` + `top300_ranking` -- lógica leída del notebook
   real (`ranking_metricas_2025`, `construir_top300_con_metricas`,
   `_normalizar_logaritmica_0_100`): KPIs, normalización log 0-100 (pesos
@@ -106,15 +122,22 @@ tomadas en el camino" abajo).
   dentro de otro `OVER()`) -- normalización separada en etapas explícitas.
 - [x] Extraído `int_ventas_12m` compartido (ver abajo) en vez de que Top
   300 calculara su propia ventana.
-- [x] Corregido error 245/248 (`producto_id` no es puramente numérico
-  en la base real -- valores como `"1685-G"` y `"7506295378"` que
-  desbordan `int`). `producto_id` casteado a `varchar(100)` en
+- [x] Corregido error 245/248, intento 1 (`producto_id` no es puramente
+  numérico en la base real -- valores como `"1685-G"` que desbordan
+  `int`). `producto_id` casteado a `varchar(100)` en
   `stg_ventas`/`stg_productos`, seed `productos_excluidos` forzado a
   `varchar(50)` vía `column_types`.
-- [ ] **Pendiente confirmar**: `dbt build --select +top300_ranking` con
-  el fix de tipos ya aplicado -- el último intento fue ANTES de este
-  fix y falló. No se sabe si hay más errores de tipo/lógica más allá de
-  este.
+- [x] Mismo error 245/248 reapareció con OTRO valor (`"ICN9695"`)
+  después del fix de arriba -- confirmado que toda la cadena de arriba
+  ya casteaba bien, pero `top300_ranking.sql` seguía fallando en sus 2
+  JOIN propios (contra `top300` y `buckets`). Se resolvió forzando
+  `cast(producto_id as varchar(100))` explícito en la condición de esos
+  2 JOIN, sin depender de que SQL Server propague el tipo solo a través
+  de varias vistas anidadas.
+- [ ] **Pendiente confirmar de punta a punta**: no se corrió todavía
+  `dbt build --select +top300_ranking` con TODOS los fixes aplicados A
+  LA VEZ (tipos + `stg_clientes_mapeo` repuntado) -- ver "Para retomar
+  ahora mismo" arriba.
 - [ ] Pendiente, no bloqueante: enriquecer con metadata de producto
   (nombre/categoria/precio desde `dbo.Productos`) -- el notebook lo hace
   en una celda aparte al final, no portado todavía.
@@ -153,7 +176,9 @@ tomadas en el camino" abajo).
    legacy (`view_ventas_ahorrazo_filtradas_12m`) ya lo resolvía bien
    con un CTE "limites" -- se portó ese mismo criterio vía el nuevo
    macro `fecha_corte_mes_cerrado()`.
-5. **`producto_id` no es puramente numérico**: ver Top 300 arriba.
+5. **`producto_id` no es puramente numérico**: ver Top 300 arriba (2
+   intentos -- el cast en staging/seed no alcanzó, hizo falta forzar el
+   cast también en los JOIN de `top300_ranking.sql`).
 
 ## Decisiones de arquitectura tomadas en el camino (no estaban en el plan original)
 

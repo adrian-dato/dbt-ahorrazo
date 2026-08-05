@@ -3,12 +3,13 @@
 -- optimizador invirtiera la conversión implícita en el JOIN contra
 -- Ventas_Ahorrazo.cliente_id).
 --
--- Fuente hoy: la tabla dbo.clientes_mapeo generada por el proceso legacy
--- (scripts-sql-ahorrazo/prod/clientes_mapeo_limpio.sql). Se reemplaza por
--- ref('int_clientes_mapeo_limpio') una vez validada la Fase 2 — este
--- modelo no cambia de forma en ese momento, solo cambia lo que hay
--- "debajo" del source.
+-- Fase 2 VALIDADA (ver PENDIENTES.md): repuntado de
+-- source('dato_solutions','clientes_mapeo') (proceso legacy,
+-- clientes_mapeo_limpio.sql, sin correr hace meses -- confirmado con el
+-- usuario) a ref('int_clientes_mapeo_limpio'). conteo_solo_nuevo=0 (sin
+-- contar los ~5985 clientes nuevos acumulados por el atraso del legacy,
+-- que es exactamente el problema que esta migración resuelve).
 select
     cast(cliente_id        as varchar(50)) as cliente_id,
     cast(cliente_id_limpio as varchar(50)) as cliente_id_limpio
-from {{ source('dato_solutions', 'clientes_mapeo') }}
+from {{ ref('int_clientes_mapeo_limpio') }}
