@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: int_top300_kpis
+    description: >
+      Reemplaza ranking_metricas_2025(). KPIs por (ambito, producto_id),
+      ambito = 'GLOBAL' o pdv_id, normalizados 0-100 dentro de cada
+      ambito. Filtro de umbral (ventas > top300_umbral_ventas_gs) ya
+      aplicado.
+    columns:
+      - name: ambito
+        tests:
+          - not_null
+      - name: producto_id
+        tests:
+          - not_null
+
+  - name: top300_ranking
+    description: >
+      Reemplaza construir_top300_con_metricas(). Top 300 por ambito
+      (GLOBAL + cada sucursal), con Puntaje Final y buckets de unidades
+      por ticket. Reemplaza dbo.top300_productos.
+    columns:
+      - name: ambito
+        tests:
+          - not_null
+      - name: producto_id
+        tests:
+          - not_null
+      - name: posicion
+        tests:
+          - not_null
+      - name: puntaje_final
+        tests:
+          - not_null

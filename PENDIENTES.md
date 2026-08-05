@@ -43,7 +43,15 @@ completo por fases.
   producción -- no asumir.
 
 ### Top 300
-- [ ] Todo pendiente (`int_ventas_mensual_producto_pdv`, `top300_ranking`).
+- [x] `int_top300_kpis` + `top300_ranking` -- escritos (lógica leída del
+  notebook real: KPIs, normalización log 0-100, Puntaje Final, buckets).
+  Sin correr todavía contra la base real.
+- [ ] `stg_ventas` e `int_ventas_elegibles` se extendieron (agregado
+  `unidades`, `timbrado`, `factura_nro`, `ticket_id`) -- ya construidos
+  antes sin estas columnas, hace falta re-buildearlos (`dbt build
+  --select +top300_ranking` los arrastra igual).
+- [ ] Pendiente, no bloqueante: enriquecer con metadata de producto
+  (nombre/categoria/precio) -- ver `models/marts/top_300/README.md`.
 
 ### Mayoristas
 - [ ] Todo pendiente (`int_ventas_filtradas_12m`, `fct_features_cliente_*`).

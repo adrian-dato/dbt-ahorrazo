@@ -10,7 +10,7 @@
 --   - Excluye categoría 2 "bolsa", categoría 1 "egre"/"servi".
 --   - Excluye el cliente de test histórico (44444401).
 --   - Excluye la lista de producto_id de seeds/productos_excluidos.csv
---     (antes solo aplicaba a Top 300 -- ahora es pareja para los 3).
+--     (antes solo aplicaba a Top 300 -- ahora se aplica para los 3).
 --
 -- View, sin materializar: cada mart consumidor define su propia ventana
 -- de fechas sobre este resultado, acá no se fija ninguna.
@@ -31,7 +31,12 @@ select
     v.producto_id,
     v.pdv_id,
     v.fecha_venta,
-    v.venta_gs
+    v.venta_gs,
+    v.unidades,
+    -- ticket_id: mismo criterio que view_ventas_ahorrazo_filtradas_12m y
+    -- top_300_productos.ipynb (ahí "ticked_id", typo heredado -- acá
+    -- corregido a ticket_id, mismo criterio de construcción).
+    concat(cast(v.timbrado as varchar(50)), '_', cast(v.factura_nro as varchar(50))) as ticket_id
 from {{ ref('stg_ventas') }} v
 inner join {{ ref('stg_clientes_mapeo') }} c
     on v.cliente_id = c.cliente_id

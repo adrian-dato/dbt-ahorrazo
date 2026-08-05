@@ -14,6 +14,9 @@ select
     producto_id,
     pdv_id,
     fecha_venta,
-    venta_gs
+    venta_gs,
+    unidades,
+    timbrado,
+    factura_nro
 from {{ source('dato_solutions', 'Ventas_Ahorrazo') }}
 where cliente_id is not null
