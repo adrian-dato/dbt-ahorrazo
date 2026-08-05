@@ -27,3 +27,20 @@ models:
       - name: total_ventas
         tests:
           - not_null
+
+  - name: fct_ventas_36m_pivotado
+    description: >
+      Reemplaza proc_2_36m.sql. Ventas por cliente/año/mes pivotadas a
+      columnas SL/R1/R2 (vía seed dim_sucursal_mapeo, no hardcodeado).
+      Grano: cliente_id_limpio/anio/mes -- suma total_ventas de
+      fct_ventas_36m a través de todos los productos.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: anio
+        tests:
+          - not_null
+      - name: mes
+        tests:
+          - not_null
