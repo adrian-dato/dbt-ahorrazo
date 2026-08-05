@@ -13,6 +13,16 @@
 -- Pendiente (no bloqueante, ver PENDIENTES.md): enriquecer con
 -- metadata de producto (nombre/categoria/precio desde dbo.Productos)
 -- -- el notebook lo hace en una celda aparte, no portado todavía.
+--
+-- cast(producto_id as varchar(100)) explícito en los JOIN de acá abajo:
+-- aunque toda la cadena (stg_ventas -> int_ventas_elegibles ->
+-- int_ventas_12m -> int_top300_kpis) ya castea producto_id a varchar,
+-- seguía apareciendo el mismo error de conversión a int (245/248) en
+-- este modelo puntual, con valores distintos cada vez ("1685-G",
+-- luego "ICN9695") -- señal de que la resolución de tipos implícita de
+-- SQL Server a través de varias vistas anidadas no es confiable acá.
+-- Se fuerza el tipo en el JOIN mismo, sin depender de que se propague
+-- solo desde arriba.
 
 {{ config(materialized='table') }}
 
@@ -71,7 +81,8 @@ ventas_top300 as (
         group by e.pdv_id, e.producto_id, e.ticket_id
     ) v
     inner join top300 t
-        on t.ambito = v.ambito and t.producto_id = v.producto_id
+        on t.ambito = v.ambito
+       and cast(t.producto_id as varchar(100)) = cast(v.producto_id as varchar(100))
 ),
 
 buckets as (
@@ -105,4 +116,5 @@ select
     isnull(b.tickets_6_mas, 0) as tickets_6_mas
 from top300 t
 left join buckets b
-    on t.ambito = b.ambito and t.producto_id = b.producto_id
+    on t.ambito = b.ambito
+   and cast(t.producto_id as varchar(100)) = cast(b.producto_id as varchar(100))
