@@ -28,10 +28,9 @@ completo por fases.
 
 ## Fase 4 — marts por proyecto
 
-### Canibalización
-- [x] `fct_ventas_36m_pivotado` -- escrito, sin correr todavía (`dbt build --select fct_ventas_36m_pivotado`).
-- [x] `dim_cliente_tipo_migracion` -- escrito, sin correr todavía
-  (`dbt build --select dim_cliente_tipo_migracion`).
+### Canibalización -- CONFIRMADO contra la base real (8/8, incluye accepted_values de los 16 tipo_cliente)
+- [x] `fct_ventas_36m_pivotado` -- construido y testeado.
+- [x] `dim_cliente_tipo_migracion` -- construido y testeado.
   **DECISIÓN QUE NECESITA CONFIRMACIÓN DE NEGOCIO ANTES DE FASE 6**:
   el legacy (`_conditions()` en el notebook) tiene un bug real -- la
   categoría "Cliente SL, R1 y R2" chequea `R1_acumulado` dos veces y
