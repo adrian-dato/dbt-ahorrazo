@@ -1,18 +1,31 @@
 # marts/mayoristas/
 
-Reemplaza `view_ventas_ahorrazo_filtradas_12m` (SQL) + el notebook v2
-(reglas Q3 + 1.5×IQR, la metodología ya validada como canónica) de
-`analisis_mayorista`. Ver `PLAN_REINGENIERIA.md` en ese repo.
+Reemplaza `analisis_mayoristas_v2.ipynb` de `analisis_mayorista` -- el
+notebook v2 (reglas Q3 + 1.5×IQR), la metodología ya validada como
+canónica frente al v1 (score ML). Lógica leída del notebook real, no
+adivinada.
 
-Pendientes (Fase 4.3 de `PLAN_MAESTRO_REINGENIERIA.md`, el proyecto
-menos urgente del portfolio — SLA mensual):
-- `int_ventas_filtradas_12m.sql` — reemplaza la vista actual (no
-  materializada, con `FORMAT()` por fila) como tabla incremental.
-- `fct_features_cliente_global.sql` / `fct_features_cliente_sucursal.sql`
-  — port SQL de `features_clientes()`/`calcular_metricas()`, hoy en pandas.
-- `dim_clientes_mayoristas.sql` — join final con el resultado de
-  `clasificar_nivel()` v2 (que se queda en Python, sobre una tabla ya
-  chica — ver `analisis_mayorista`), build-and-swap atómico.
+## Estado
 
-v1 (score ML + KMeans/IsolationForest) se archiva como job separado
-(`clientes_mayoristas_ml_archive`), no se borra ni se migra a dbt.
+- `int_mayoristas_umbral_ticket_grande`, `int_mayoristas_metricas_cliente`,
+  `dim_clientes_mayoristas` -- escritos. Sin correr todavía contra la
+  base real.
+- `int_ventas_filtradas_12m` (nombrado así en el plan original) ya
+  estaba resuelto de antes: es `int_ventas_12m` en `intermediate/`,
+  compartido con Top 300 -- no se duplicó acá.
+
+## Desvío respecto al plan original
+
+El plan original (`PLAN_MAESTRO_REINGENIERIA.md`, y el propio
+`PLAN_REINGENIERIA.md` de `analisis_mayorista`) preveía que
+`clasificar_nivel()` se quedara en Python ("scoring sobre una tabla ya
+chica"). Acá se portó completo a SQL (`dim_clientes_mayoristas.sql`,
+vía `PERCENTILE_CONT` para los umbrales Q3 dinámicos) porque la lógica
+-- comparar cada métrica contra un umbral y sumar puntos -- se expresa
+igual de bien en SQL, sin necesitar un paso Python aparte. No cambia
+ningún resultado (mismo cálculo, mismos umbrales), solo dónde corre --
+push-down completo a SQL Server, coherente con el principio rector del
+plan maestro ("el cómputo pesado vive en SQL Server, no en Python").
+
+v1 (score ML + KMeans/IsolationForest) se archiva como job separado en
+`analisis_mayorista`, no se migra a dbt.

@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: int_mayoristas_umbral_ticket_grande
+    description: >
+      Reemplaza calcular_umbral_ticket_grande(). Umbral único (Q3 + 1.5*IQR)
+      sobre unidades por ticket de todo el universo de 12 meses -- 1 fila,
+      reutilizado en los 4 ámbitos de int_mayoristas_metricas_cliente.
+
+  - name: int_mayoristas_metricas_cliente
+    description: >
+      Reemplaza calcular_metricas(). Grano (ambito, cliente_id_limpio),
+      ambito = GLOBAL o sucursal_codigo (SL/R1/R2).
+    columns:
+      - name: ambito
+        tests:
+          - not_null
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+
+  - name: dim_clientes_mayoristas
+    description: >
+      Reemplaza clasificar_nivel(). Reemplaza dbo.clientes_mayoristas_v2.
+      Puntaje 0-3 y nivel_mayorista (Alto/Medio/Potencial/Minorista) con
+      umbrales Q3 dinámicos por ámbito.
+    columns:
+      - name: ambito
+        tests:
+          - not_null
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: nivel_mayorista
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Alto', 'Medio', 'Potencial', 'Minorista']

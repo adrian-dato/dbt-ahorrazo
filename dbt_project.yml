@@ -39,6 +39,12 @@ vars:
   top300_peso_unidades_ticket: 0.10
   top300_umbral_ventas_gs: 5000000
 
+  # Mayoristas — piso mínimo para el criterio C2 (% tickets grandes).
+  # PCT_GRANDES_MINIMO en analisis_mayoristas_v2.ipynb -- el comentario
+  # del notebook dice "30%" pero el valor real usado en el código es
+  # 0.40; se porta el valor real, no el comentario desactualizado.
+  mayoristas_pct_grandes_minimo: 0.40
+
 # Sin esto, dbt infiere producto_id como int a partir del CSV (todo
 # dígitos) -- y como producto_id real en la base no es puramente
 # numérico ("1685-G", ni cabe siempre en int, ej. "7506295378"), un JOIN

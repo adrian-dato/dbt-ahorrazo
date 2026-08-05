@@ -142,11 +142,28 @@ tomadas en el camino" abajo).
   (nombre/categoria/precio desde `dbo.Productos`) -- el notebook lo hace
   en una celda aparte al final, no portado todavía.
 
-### Mayoristas — NO INICIADA
-- [ ] Todo pendiente (`fct_features_cliente_*`, `clasificar_nivel()`
-  portado a módulo Python testeado). `int_ventas_12m` (ver arriba) ya
-  está listo para que Mayoristas lo reutilice directamente -- no
-  duplicar el filtro de ventana ahí.
+### Mayoristas — CÓDIGO ESCRITO, SIN CORRER TODAVÍA
+- [x] Lógica leída del notebook real `analisis_mayoristas_v2.ipynb`
+  (`calcular_umbral_ticket_grande`, `calcular_metricas`,
+  `clasificar_nivel`) -- 3 modelos nuevos en `models/marts/mayoristas/`:
+  `int_mayoristas_umbral_ticket_grande` (Q3+1.5*IQR global, único),
+  `int_mayoristas_metricas_cliente` (grano ambito/cliente, GLOBAL+SL+R1+R2),
+  `dim_clientes_mayoristas` (puntaje 0-3, `nivel_mayorista`, umbrales Q3
+  dinámicos por ámbito vía `PERCENTILE_CONT`).
+- **Desvío del plan original**: `clasificar_nivel()` se portó COMPLETO a
+  SQL (el plan preveía dejarlo en Python) -- mismo cálculo, mismos
+  umbrales, no cambia ningún resultado, solo dónde corre. Ver
+  `models/marts/mayoristas/README.md` para el detalle.
+- [x] Las exclusiones propias del notebook (`EXCLUIR_CLIENTES`,
+  `EXCLUIR_PRODUCTOS` -- mismos 13 ids que Top 300) ya están cubiertas
+  por `int_ventas_12m`, no se duplicaron.
+- [ ] **Sin correr todavía contra la base real** -- primera vez que se
+  prueba `PERCENTILE_CONT`/`CROSS JOIN` en este proyecto, no hay
+  garantía de que compile/corra sin ajustes en el primer intento.
+  Probar con: `dbt build --select +dim_clientes_mayoristas`.
+- [ ] Pendiente, fuera de este repo: portar `clasificar_nivel()` original
+  (ahora redundante si el SQL de acá se valida) o simplemente decomisionar
+  esa parte del notebook en `analisis_mayorista` durante Fase 6.
 
 ---
 
