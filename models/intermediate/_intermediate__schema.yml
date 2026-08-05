@@ -56,3 +56,14 @@ models:
       - name: pdv_id
         tests:
           - not_null
+
+  - name: int_ventas_12m
+    description: >
+      Ventana móvil de 12 meses sobre int_ventas_elegibles -- COMPARTIDA
+      entre Top 300 y Mayoristas (los 2 proyectos que dependen de la
+      misma ventana en el legacy, view_ventas_ahorrazo_filtradas_12m).
+      Rolling de verdad (calculado contra getdate(), no fechas fijas).
+    columns:
+      - name: producto_id
+        tests:
+          - not_null

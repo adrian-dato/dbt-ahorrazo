@@ -45,13 +45,19 @@ completo por fases.
 ### Top 300
 - [x] `int_top300_kpis` + `top300_ranking` -- escritos (lógica leída del
   notebook real: KPIs, normalización log 0-100, Puntaje Final, buckets).
-  Sin correr todavía contra la base real.
-- [ ] `stg_ventas` e `int_ventas_elegibles` se extendieron (agregado
-  `unidades`, `timbrado`, `factura_nro`, `ticket_id`) -- ya construidos
-  antes sin estas columnas, hace falta re-buildearlos (`dbt build
-  --select +top300_ranking` los arrastra igual).
+- [x] Se corrigió error 4109 (OVER anidado) en `int_top300_kpis`.
+- [x] Se extrajo `int_ventas_12m` (ventana móvil de 12 meses,
+  COMPARTIDA con Mayoristas -- antes cada proyecto la hubiera calculado
+  por separado, ahora es un solo modelo en `intermediate/`). Top 300 ya
+  consume este modelo, no filtra por su cuenta.
+- [ ] Sin correr todavía contra la base real (`dbt build --select
+  +top300_ranking` -- vuelve a re-scanear Ventas_Ahorrazo por las
+  columnas nuevas de stg_ventas, no debería ser tan largo como el
+  full-refresh de Fase 2).
 - [ ] Pendiente, no bloqueante: enriquecer con metadata de producto
   (nombre/categoria/precio) -- ver `models/marts/top_300/README.md`.
 
 ### Mayoristas
-- [ ] Todo pendiente (`int_ventas_filtradas_12m`, `fct_features_cliente_*`).
+- [ ] Todo pendiente (`fct_features_cliente_*`). `int_ventas_12m` (ver
+  arriba) ya está listo para que Mayoristas lo reutilice directamente en
+  vez de duplicar el filtro de ventana -- no repetir esa parte.

@@ -26,16 +26,18 @@ vars:
   meses_ventana_canibalizacion: 36
   dias_lookback_incremental: 45
 
-  # Top 300 — ventana móvil del ranking
-  top300_ventana_meses: 12
+  # Compartida entre Top 300 y Mayoristas -- los 2 proyectos que hoy
+  # dependen de la misma ventana (view_ventas_ahorrazo_filtradas_12m en
+  # el legacy). Ver models/intermediate/int_ventas_12m.sql -- un solo
+  # modelo, no una copia del filtro por proyecto.
+  ventana_meses_12m: 12
+
+  # Top 300 — pesos del Puntaje Final
   top300_peso_ventas: 0.40
   top300_peso_tickets: 0.30
   top300_peso_unidades_dia: 0.20
   top300_peso_unidades_ticket: 0.10
   top300_umbral_ventas_gs: 5000000
-
-  # Mayoristas — ventana de la vista RFM (reemplaza view_ventas_ahorrazo_filtradas_12m)
-  meses_ventana_mayoristas: 12
 
 models:
   dbt_ahorrazo:

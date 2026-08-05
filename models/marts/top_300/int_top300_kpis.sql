@@ -3,8 +3,8 @@
 -- patrón que el notebook (concatena resultado global + por sucursal,
 -- cada uno normalizado dentro de su propio ámbito).
 --
--- Fuente: int_ventas_elegibles (ya excluye empresa/categoría/cliente
--- test/producto excluido).
+-- Fuente: int_ventas_12m -- ventana móvil de 12 meses COMPARTIDA con
+-- Mayoristas (no se recalcula acá; ver int_ventas_12m.sql).
 --
 -- La normalización logarítmica se separa en etapas (con_min -> con_log
 -- -> con_minmax_log -> final) porque SQL Server no permite anidar una
@@ -15,10 +15,7 @@
 {{ config(materialized='view') }}
 
 with ventas as (
-    select *
-    from {{ ref('int_ventas_elegibles') }}
-    where fecha_venta >= dateadd(month, -{{ var('top300_ventana_meses') }}, getdate())
-      and fecha_venta < getdate()
+    select * from {{ ref('int_ventas_12m') }}
 ),
 
 union_ambitos as (

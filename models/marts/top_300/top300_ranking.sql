@@ -58,9 +58,7 @@ ventas_top300 as (
             'GLOBAL' as ambito,
             e.producto_id,
             sum(e.unidades) as unidades_ticket_producto
-        from {{ ref('int_ventas_elegibles') }} e
-        where e.fecha_venta >= dateadd(month, -{{ var('top300_ventana_meses') }}, getdate())
-          and e.fecha_venta < getdate()
+        from {{ ref('int_ventas_12m') }} e
         group by e.producto_id, e.ticket_id
 
         union all
@@ -69,9 +67,7 @@ ventas_top300 as (
             cast(e.pdv_id as varchar(50)) as ambito,
             e.producto_id,
             sum(e.unidades) as unidades_ticket_producto
-        from {{ ref('int_ventas_elegibles') }} e
-        where e.fecha_venta >= dateadd(month, -{{ var('top300_ventana_meses') }}, getdate())
-          and e.fecha_venta < getdate()
+        from {{ ref('int_ventas_12m') }} e
         group by e.pdv_id, e.producto_id, e.ticket_id
     ) v
     inner join top300 t
