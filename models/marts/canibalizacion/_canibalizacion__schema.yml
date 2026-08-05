@@ -44,3 +44,37 @@ models:
       - name: mes
         tests:
           - not_null
+
+  - name: dim_cliente_tipo_migracion
+    description: >
+      Reemplaza _conditions() (canibalizacion_v1_usado.ipynb) -- clasifica
+      cada cliente/mes según su patrón de compra/migración entre SL/R1/R2.
+      Corrige un bug real del legacy (ver comentario en el modelo): la
+      categoría "Cliente SL, R1 y R2" no chequeaba SL_acumulado. No
+      esperar que coincida 1:1 contra el legacy en esa categoría
+      puntual -- confirmar con negocio antes de Fase 6.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: tipo_cliente
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - 'Cliente SL'
+                - 'Cliente R1'
+                - 'Cliente R2'
+                - 'Cliente Dual SL y R1'
+                - 'Cliente Dual SL y R2'
+                - 'Cliente Dual R1 y R2'
+                - 'Cliente SL, R1 y R2'
+                - 'Migro de SL a R1'
+                - 'Migro de SL a R2'
+                - 'Migro de SL a R1 y R2'
+                - 'Migro de R1 a SL'
+                - 'Migro de R1 a R2'
+                - 'Migro de R1 a SL y R2'
+                - 'Migro de R2 a SL'
+                - 'Migro de R2 a R1'
+                - 'Migro de R2 a SL y R1'

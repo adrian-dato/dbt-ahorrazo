@@ -21,14 +21,30 @@ completo por fases.
 
 - [x] Modelo escrito + seed `productos_excluidos.csv` (lista real, sacada
   de `top_300_productos.ipynb`, no inventada).
-- [ ] Sin correr todavía contra la base real (falta `dbt build --select
-  int_ventas_elegibles`, no depende del build en curso de Fase 2).
+- [x] Confirmado contra la base real: `dbt build --select +int_ventas_elegibles` -- 13/13 en verde.
 - [ ] Limpieza opcional, no bloqueante: migrar `fct_ventas_36m` para que
   use `ref('int_ventas_elegibles')` en vez de su copia inline de las
   mismas reglas.
 
 ## Fase 4 — marts por proyecto
 
-- [ ] Canibalización: `fct_ventas_36m_pivotado`, `dim_cliente_tipo_migracion`.
-- [ ] Top 300: todo (`int_ventas_mensual_producto_pdv`, `top300_ranking`).
-- [ ] Mayoristas: todo (`int_ventas_filtradas_12m`, `fct_features_cliente_*`).
+### Canibalización
+- [x] `fct_ventas_36m_pivotado` -- escrito, sin correr todavía (`dbt build --select fct_ventas_36m_pivotado`).
+- [x] `dim_cliente_tipo_migracion` -- escrito, sin correr todavía
+  (`dbt build --select dim_cliente_tipo_migracion`).
+  **DECISIÓN QUE NECESITA CONFIRMACIÓN DE NEGOCIO ANTES DE FASE 6**:
+  el legacy (`_conditions()` en el notebook) tiene un bug real -- la
+  categoría "Cliente SL, R1 y R2" chequea `R1_acumulado` dos veces y
+  nunca `SL_acumulado`, así que cualquier cliente con actividad en R1+R2
+  (sin SL) queda mal etiquetado como "SL, R1 y R2" en vez de "Dual R1 y
+  R2". Se portó la versión CORREGIDA. Efecto: al comparar contra el
+  legacy, NO va a coincidir 1:1 en esas dos categorías puntuales (sí
+  debería coincidir la suma de ambas). Confirmar con el equipo de
+  negocio que corregir esto es lo que quieren antes de cortar a
+  producción -- no asumir.
+
+### Top 300
+- [ ] Todo pendiente (`int_ventas_mensual_producto_pdv`, `top300_ranking`).
+
+### Mayoristas
+- [ ] Todo pendiente (`int_ventas_filtradas_12m`, `fct_features_cliente_*`).
