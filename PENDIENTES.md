@@ -185,14 +185,31 @@ tomadas en el camino" abajo).
   y corrido contra datos reales (4.204.051 filas -> 379.236 eventos ->
   362 filas de salida), ya usa el patrón seguro de escritura
   (`engine_sqlalchemy_bd()`). Escribe a `dbo.canibalizacion_sucursales`
-  (tabla distinta de v1). **NO portado a dbt** -- candidato a una futura
-  fase, no evaluado todavía si reemplaza, complementa, o es una vía
-  paralela a v1/`dim_cliente_tipo_migracion`. Duda de diseño para
-  confirmar con quien armó la lógica: cuando un cliente migra más de una
-  vez (ej. SL→R1→R2), el "Local_Origen" usado para calcular los meses
-  sin comprar en la segunda migración sigue siendo la primera sucursal
-  de siempre (SL), no la inmediatamente anterior (R1) -- puede ser
-  intencional, no se tocó.
+  (tabla resumen agregada, sin `cliente_id`, distinta de v1). **NO
+  portado a dbt** -- candidato a una futura fase, no evaluado todavía si
+  reemplaza, complementa, o es una vía paralela a
+  v1/`dim_cliente_tipo_migracion`.
+  - [x] **Duda de diseño confirmada con quien armó la lógica**: el
+    usuario diseñó esta parte -- `Local_Origen` fijo (siempre la primera
+    sucursal, no la inmediatamente anterior) es intencional para algunos
+    usos, pero no sirve para un Sankey/flujo de migración en PowerBI.
+    Documentado en el notebook (celda markdown nueva, después del loop
+    de clasificación) el cambio de una línea (`local_origen =
+    local_destino`) para agregar `Local_Origen_Inmediato` como columna
+    NUEVA sin tocar `Local_Origen` -- **no aplicado todavía**, decisión
+    de negocio pendiente sobre si hace falta.
+  - [x] **Tabla nueva agregada**: `dbo.canibalizacion_evolutivo_cliente`
+    -- grano cliente×mes×sucursal (el `df_largo` que antes se
+    descartaba), TODOS los clientes de la ventana (~3M filas), para el
+    visual de PowerBI del evolutivo mensual por cliente. Tabla aparte,
+    no reemplaza `dbo.canibalizacion_sucursales`. Código listo en el
+    notebook (sección 13) y en `canibalizacion_v3.py` -- **sin correr
+    todavía**.
+  - [x] **`canibalizacion_v3.py`** creado -- espejo en texto plano del
+    notebook completo (mismo patrón que `canibalizacion_v1.py`), con
+    toda la documentación de reglas de negocio y el mapeo pandas→SQL
+    incluidos como comentarios/docstring. No se ejecuta solo (no hay DAG
+    que lo invoque todavía).
 
 ### Top 300 — CÓDIGO LISTO, FIXES SIN CONFIRMAR CONTRA LA BASE (más el repunte de clientes)
 - [x] `int_top300_kpis` + `top300_ranking` -- lógica leída del notebook
