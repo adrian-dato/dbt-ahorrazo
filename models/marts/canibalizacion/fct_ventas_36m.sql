@@ -5,16 +5,18 @@
 --     en vez de TRUNCATE + INSERT completo: la corrida normal solo
 --     reprocesa los últimos `dias_lookback_incremental` días, no los 36
 --     meses enteros. El full-scan completo solo ocurre con --full-refresh.
---   - El cast de cliente_id y la collation de categorías se resuelven una
---     sola vez en stg_clientes_mapeo/stg_productos, no en cada corrida.
 --   - dbt materializa en una tabla nueva y hace el swap al final: la
 --     ventana de bloqueo para lectores concurrentes pasa de "toda la
 --     corrida" a segundos.
 --
--- Nota de reglas de exclusión: por ahora estas condiciones quedan igual
--- que en el proc original (portado 1:1). Se reemplazan por
--- ref('int_ventas_elegibles') en la Fase 3, cuando ese modelo compartido
--- exista -- no se duplica la lógica mientras tanto, se marca acá.
+-- Usa ref('int_ventas_elegibles') para las reglas de exclusión
+-- (empresa/categoría/cliente test/producto excluido) en vez de la copia
+-- inline que tenía antes -- cierra la duplicación que había quedado
+-- pendiente desde Fase 3 (ver PENDIENTES.md). CAMBIO DE RESULTADO real,
+-- no solo de código: int_ventas_elegibles también excluye los 13
+-- producto_id de seeds/productos_excluidos.csv (ids de test/placeholder),
+-- regla que hasta ahora solo aplicaba a Top 300. Confirmado con el
+-- usuario antes de aplicar.
 --
 -- Ventana en MESES CERRADOS (corregido -- antes usaba getdate() directo
 -- como límite superior, mezclando el mes en curso, parcial, con meses ya
@@ -31,17 +33,9 @@
     )
 }}
 
-with clientes as (
-    select * from {{ ref('stg_clientes_mapeo') }}
-),
-
-productos as (
-    select * from {{ ref('stg_productos') }}
-),
-
-ventas as (
+with ventas as (
     select *
-    from {{ ref('stg_ventas') }}
+    from {{ ref('int_ventas_elegibles') }}
     where fecha_venta >= dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})
       and fecha_venta <  {{ fecha_corte_mes_cerrado() }}
       {% if is_incremental() %}
@@ -52,28 +46,16 @@ ventas as (
 )
 
 select
-    c.cliente_id_limpio,
-    v.producto_id,
-    v.pdv_id,
-    year(v.fecha_venta)  as anio,
-    month(v.fecha_venta) as mes,
-    sum(v.venta_gs)      as total_ventas
-from ventas v
-inner join clientes c
-    on v.cliente_id = c.cliente_id
-inner join productos p
-    on v.producto_id = p.producto_id
-where
-    -- Exclusión histórica de un cliente interno/de test — regla heredada
-    -- de proc_1_36m.sql, no un ID real de negocio.
-    isnull(c.cliente_id_limpio, '') <> '44444401'
-    and p.id_empresa = 3
-    and isnull(p.categoria_2, '') not like '%bolsa%'
-    and isnull(p.categoria_1, '') not like '%egre%'
-    and isnull(p.categoria_1, '') not like '%servi%'
+    cliente_id_limpio,
+    producto_id,
+    pdv_id,
+    year(fecha_venta)  as anio,
+    month(fecha_venta) as mes,
+    sum(venta_gs)      as total_ventas
+from ventas
 group by
-    c.cliente_id_limpio,
-    v.producto_id,
-    v.pdv_id,
-    year(v.fecha_venta),
-    month(v.fecha_venta)
+    cliente_id_limpio,
+    producto_id,
+    pdv_id,
+    year(fecha_venta),
+    month(fecha_venta)

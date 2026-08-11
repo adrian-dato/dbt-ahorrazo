@@ -35,4 +35,5 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Alto', 'Medio', 'Potencial', 'Minorista']
+              arguments:
+                values: ['Alto', 'Medio', 'Potencial', 'Minorista']

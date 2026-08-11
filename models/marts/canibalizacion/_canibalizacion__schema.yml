@@ -61,20 +61,21 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values:
-                - 'Cliente SL'
-                - 'Cliente R1'
-                - 'Cliente R2'
-                - 'Cliente Dual SL y R1'
-                - 'Cliente Dual SL y R2'
-                - 'Cliente Dual R1 y R2'
-                - 'Cliente SL, R1 y R2'
-                - 'Migro de SL a R1'
-                - 'Migro de SL a R2'
-                - 'Migro de SL a R1 y R2'
-                - 'Migro de R1 a SL'
-                - 'Migro de R1 a R2'
-                - 'Migro de R1 a SL y R2'
-                - 'Migro de R2 a SL'
-                - 'Migro de R2 a R1'
-                - 'Migro de R2 a SL y R1'
+              arguments:
+                values:
+                  - 'Cliente SL'
+                  - 'Cliente R1'
+                  - 'Cliente R2'
+                  - 'Cliente Dual SL y R1'
+                  - 'Cliente Dual SL y R2'
+                  - 'Cliente Dual R1 y R2'
+                  - 'Cliente SL, R1 y R2'
+                  - 'Migro de SL a R1'
+                  - 'Migro de SL a R2'
+                  - 'Migro de SL a R1 y R2'
+                  - 'Migro de R1 a SL'
+                  - 'Migro de R1 a R2'
+                  - 'Migro de R1 a SL y R2'
+                  - 'Migro de R2 a SL'
+                  - 'Migro de R2 a R1'
+                  - 'Migro de R2 a SL y R1'

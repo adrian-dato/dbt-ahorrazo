@@ -19,11 +19,19 @@
 -- int_clientes_mapeo_limpio -- ese cambio se hace recién cuando la
 -- Fase 2 esté validada (ver PENDIENTES.md, no usar antes de eso).
 --
--- fct_ventas_36m (Canibalización) TODAVÍA no consume este modelo --
--- sigue con su propia copia inline de estas mismas reglas, ya construida
--- y testeada. Migrarlo a ref(this) es limpieza pendiente (ver
--- PENDIENTES.md), no bloqueante: los marts nuevos (Top 300, Mayoristas)
--- sí arrancan usando este modelo desde el principio.
+-- fct_ventas_36m (Canibalización) ya consume este modelo (migrado --
+-- antes tenía su propia copia inline de estas mismas reglas). Efecto de
+-- la migración: ahora también aplica la exclusión de
+-- productos_excluidos, que antes solo corría para Top 300.
+--
+-- cast(producto_id as varchar(100)) explícito en los 2 JOIN de acá abajo:
+-- mismo motivo que en top300_ranking.sql -- no alcanza con que
+-- stg_ventas/stg_productos ya casteen, si la tabla física del otro lado
+-- del JOIN queda con un tipo distinto (ej. un seed creado antes de que
+-- existiera su `column_types`, que solo se aplica al crear la tabla, no
+-- en un TRUNCATE+INSERT sobre una que ya existe) SQL Server intenta
+-- convertir ESTE lado a ese tipo por precedencia, y explota con
+-- cualquier producto_id no numérico o fuera de rango de int.
 
 select
     v.cliente_id,
@@ -41,9 +49,9 @@ from {{ ref('stg_ventas') }} v
 inner join {{ ref('stg_clientes_mapeo') }} c
     on v.cliente_id = c.cliente_id
 inner join {{ ref('stg_productos') }} p
-    on v.producto_id = p.producto_id
+    on cast(v.producto_id as varchar(100)) = cast(p.producto_id as varchar(100))
 left join {{ ref('productos_excluidos') }} pe
-    on v.producto_id = pe.producto_id
+    on cast(v.producto_id as varchar(100)) = cast(pe.producto_id as varchar(100))
 where
     isnull(c.cliente_id_limpio, '') <> '44444401'
     and p.id_empresa = 3

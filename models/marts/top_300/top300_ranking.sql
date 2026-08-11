@@ -43,9 +43,15 @@ puntaje as (
 rankeado as (
     select
         *,
+        -- producto_id como tercer criterio de desempate: sin esto, dos
+        -- productos empatados en puntaje_final Y ventas no tienen un
+        -- orden garantizado entre corridas (SQL Server no lo asegura),
+        -- lo que puede correr la posición #300 de una corrida a otra sin
+        -- que cambie ningún dato real -- rompe la idempotencia del
+        -- ranking.
         row_number() over (
             partition by ambito
-            order by puntaje_final desc, ventas desc
+            order by puntaje_final desc, ventas desc, producto_id
         ) as posicion
     from puntaje
 ),

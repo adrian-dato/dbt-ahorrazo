@@ -18,6 +18,20 @@ sources:
         description: >
           Fact de ventas transaccional, 238M+ filas. HEAP sin Columnstore
           Index — fix candidato en Fase 0, independiente de dbt.
+        # Alerta de frescura -- no bloqueante a propósito (solo
+        # warn_after, sin error_after: nunca falla el comando/pipeline,
+        # solo queda registrado). fecha_venta como proxy: no hay columna
+        # de tipo "ultima_actualizacion"/"fecha_carga" en la tabla cruda,
+        # y una fact de ventas que dejó de recibir filas nuevas en los
+        # últimos 7 días es señal directa de que la réplica/ETL desde el
+        # origen se frenó. Se chequea con `dbt source freshness` (comando
+        # aparte, no corre dentro de `dbt build`) -- queda archivado como
+        # cualquier otro comando vía el wrapper de activar.sh. Correrlo
+        # con una frecuencia real (al menos semanal, según el pedido) es
+        # tarea de Fase 5 (Airflow) -- acá se deja la definición lista.
+        loaded_at_field: fecha_venta
+        freshness:
+          warn_after: {count: 7, period: day}
         columns:
           - name: cliente_id
             description: Identificador de cliente tal como llega de origen (tipo inconsistente con clientes_mapeo.cliente_id, normalizado en stg_clientes_mapeo).

@@ -9,6 +9,7 @@ seed-paths: ["seeds"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
 analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
 
 target-path: "target"
 clean-targets:
@@ -50,8 +51,15 @@ vars:
 # numérico ("1685-G", ni cabe siempre en int, ej. "7506295378"), un JOIN
 # contra esa columna int explota (SQL Server intenta convertir el otro
 # lado a int primero, por precedencia de tipos). Ver stg_ventas.sql.
+#
+# +schema acá y en models/ abajo: un schema de base de datos por capa
+# (y uno por proyecto dentro de marts/), en vez de todo apilado en un
+# solo schema. Nombres limpios, sin prefijo de entorno -- ver
+# macros/generate_schema_name.sql para la razón (dev/prod comparten la
+# misma base, el prefijo no daba aislamiento real).
 seeds:
   dbt_ahorrazo:
+    +schema: seeds
     productos_excluidos:
       +column_types:
         producto_id: varchar(50)
@@ -60,8 +68,10 @@ models:
   dbt_ahorrazo:
     staging:
       +materialized: view
+      +schema: staging
     intermediate:
-      # Sin default: no todos los modelos de intermediate/ tocan la
+      +schema: intermediate
+      # Sin +materialized: no todos los modelos de intermediate/ tocan la
       # fact de 238M+ filas (ej. la dimensión de clientes es chica y
       # alcanza con `table`) -- cada modelo declara su propia
       # materialización con {{ config(...) }}.
@@ -69,9 +79,12 @@ models:
       canibalizacion:
         +materialized: table
         +tags: ["canibalizacion"]
+        +schema: marts_canibalizacion
       top_300:
         +materialized: table
         +tags: ["top_300"]
+        +schema: marts_top_300
       mayoristas:
         +materialized: table
         +tags: ["mayoristas"]
+        +schema: marts_mayoristas

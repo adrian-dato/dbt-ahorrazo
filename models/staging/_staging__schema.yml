@@ -12,20 +12,57 @@ models:
           - not_null
 
   - name: stg_productos
+    description: >
+      1:1 sobre dbo.productos (columnas de negocio, no todo el catálogo).
+      Contract enforced -- mismo motivo que stg_ventas (ver ahí).
+    config:
+      contract:
+        enforced: true
     columns:
       - name: producto_id
+        data_type: varchar(100)
         tests:
           - not_null
           - unique
+      - name: id_empresa
+        data_type: bigint
+      - name: categoria_1
+        data_type: varchar(max)
+      - name: categoria_2
+        data_type: varchar(max)
 
   - name: stg_ventas
+    description: >
+      1:1 sobre dbo.Ventas_Ahorrazo. Contract enforced: si el tipo real
+      de una columna cambia en la fuente (o alguien saca un cast sin
+      querer), dbt falla acá mismo en el build, en vez de que aparezca
+      como un error de conversión río abajo en algún mart (ver
+      PENDIENTES.md, bug de producto_id -- ese fue el motivo de agregar
+      esto).
+    config:
+      contract:
+        enforced: true
     columns:
       - name: cliente_id
+        data_type: varchar(255)
         tests:
           - not_null
       - name: producto_id
+        data_type: varchar(100)
         tests:
           - not_null
+      - name: pdv_id
+        data_type: varchar(255)
+      - name: fecha_venta
+        data_type: date
+      - name: venta_gs
+        data_type: float
+      - name: unidades
+        data_type: float
+      - name: timbrado
+        data_type: varchar(255)
+      - name: factura_nro
+        data_type: varchar(255)
 
   - name: stg_clientes_limpio
     description: Dimensión por cliente_id_limpio, tal como la publica hoy el proceso legacy. Se reemplaza de fuente en Fase 2 (int_clientes_mapeo_limpio).
