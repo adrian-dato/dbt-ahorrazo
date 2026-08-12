@@ -258,10 +258,14 @@ dbt build
   falta `dbt snapshot --select ...` explícito. Y `dbt snapshot
   --full-refresh` **borra toda la historia acumulada** — nunca usarlo
   salvo que sea intencional.
-- **`dbt source freshness`** (alerta de datos desactualizados sobre
-  `Ventas_Ahorrazo`, `warn_after: 7 días`, ver
-  `models/staging/_staging__sources.yml`) no corre dentro de `dbt
-  build` ni `dbt snapshot` — es un comando aparte. Automatizado vía
+- **La alerta de frescura no corre dentro de `dbt build` ni `dbt
+  snapshot`** — es un comando aparte (`dbt test --select
+  assert_ventas_actualizada_mes_cerrado`). No usa `dbt source
+  freshness` (ese mecanismo solo soporta umbrales relativos tipo "hace
+  N días", no un corte de calendario) — es un test singular
+  (`tests/assert_ventas_actualizada_mes_cerrado.sql`, `severity: warn`)
+  que compara `fecha_venta` contra el último día del mes cerrado más
+  reciente, vía el macro `fecha_corte_mes_cerrado()`. Automatizado vía
   `dbt_ahorrazo_diario` (ver "Orquestación" abajo).
 - **Cuando se mueve un objeto de schema** (pasó con la restructuración a
   `staging`/`intermediate`/`marts_*`), cualquier modelo no reconstruido
@@ -284,7 +288,7 @@ lógica de retry/email.
 |---|---|---|---|
 | `dbt_ahorrazo_mensual` | `dim_clientes_mayoristas` + su snapshot | Día 1, 02:00 | Más margen -- Mayoristas es el más nuevo, sin tiempo real medido |
 | `dbt_ahorrazo_semanal` | `dim_cliente_tipo_migracion` + su snapshot, `top300_ranking` | Lunes, 04:00 | `dbt build` completo mide ~1h30 (dato real) |
-| `dbt_ahorrazo_diario` | `dbt source freshness` | Todos los días, 05:30 | Liviano, corre en segundos |
+| `dbt_ahorrazo_diario` | `dbt test --select assert_ventas_actualizada_mes_cerrado` | Todos los días, 05:30 | Liviano, corre en segundos |
 
 Los 3 terminan bien antes de las 07:00 UTC, cuando arranca el
 `dag_orquestador` de Stock (ETL → diarias → semanales, con timeouts de
