@@ -38,34 +38,38 @@ Contexto completo, diagnóstico y plan de fases:
 
 ## Estado
 
-**Fase 1 (fundación) — hecha y validada contra la base real.** Portado
-desde `canibalizacion_ahorrazo` (la implementación más madura del
-portfolio, sin cambios de lógica salvo el renombre de la var
-`meses_ventana` -> `meses_ventana_canibalizacion`): `stg_ventas`,
-`stg_productos`, `stg_clientes_mapeo`, `stg_clientes_limpio`,
-`fct_ventas_36m`, y el seed `dim_sucursal_mapeo`. Nuevo en este repo:
-`stg_clientes` (sobre `dbo.Clientes`). `dbt build --select staging
-fct_ventas_36m` corre limpio de punta a punta contra la base real
-(20/20 tests, `fct_ventas_36m` construido en `dbt_dev`) -- confirma que
-la estrategia incremental (`delete+insert`) y el adaptador
-`dbt-sqlserver` funcionan en este entorno puntual. En el camino se
-encontraron y resolvieron dos cosas reales: el server usa certificado
-autofirmado (hace falta `trust_cert: true`, ver `profiles.yml.example`)
-y `Ventas_Ahorrazo` tenía 2 filas con `cliente_id` NULL (ventas de
-mostrador anónimas, ya excluidas en `stg_ventas`).
+*(Resumen ejecutivo — para el detalle comando por comando y qué falta
+puntualmente, ver [`PENDIENTES.md`](PENDIENTES.md); para los diagramas
+de dependencias y el orden de ejecución real, ver
+[`ARQUITECTURA.md`](ARQUITECTURA.md).)*
 
-**Fase 2 (migrar `clientes_mapeo_limpio`) — modelos hechos, validación
-pendiente.** `int_clientes_normalizados`, `int_clientes_mapeo_limpio`
-(incremental) e `int_clientes_limpio` (`table`) ya están escritos,
-portando regla por regla la limpieza de `dbo.Clientes` del proceso
-legacy (ver `models/intermediate/README.md`). **Corren en paralelo al
-proceso legacy** — `stg_clientes_mapeo`/`stg_clientes_limpio` siguen
-apuntando a las tablas viejas hasta validar con
-`analyses/validar_clientes_mapeo_limpio.sql` que el resultado coincide.
+**Fases 1 a 4 — confirmadas contra la base real.** Fundación (staging +
+`fct_ventas_36m`), migración de `clientes_mapeo_limpio` (con 2 bugs
+reales del proceso legacy encontrados y corregidos en el camino),
+reglas de negocio compartidas (`int_ventas_elegibles`, `int_ventas_12m`)
+y los 3 marts por proyecto: **Canibalización** (v1, `dim_cliente_tipo_migracion`),
+**Top 300 Productos** (`top300_ranking`) y **Clientes Mayoristas**
+(`dim_clientes_mayoristas`). Los 3 con snapshots SCD2 (`dbt snapshot`)
+donde corresponde.
 
-**Pendiente**: reglas de exclusión compartidas (Fase 3, `int_ventas_elegibles`)
-y el resto de los marts por proyecto (Fase 4). Cada carpeta de `models/`
-tiene un `README.md` con el detalle de qué falta y en qué fase.
+**Canibalización v3** (metodología nueva, eventos de migración
+cliente→sucursal — vía paralela a v1, no la reemplaza): código portado
+y listo, **primera corrida contra la base real pendiente** — es el
+próximo paso técnico del repo.
+
+**Fase 5 (orquestación) — cerrada.** Los 3 proyectos corren en
+producción vía Airflow, en un repo separado
+([`orquestacion_ahorrazo`](../orquestacion_ahorrazo), sibling de este)
+que se suma al Airflow dockerizado que ya opera el equipo de Stock en
+el mismo Windows Server — DAGs propios e independientes, sin acoplarse
+a la orquestación de Stock. Ver la sección "Orquestación (Airflow)" en
+[`ARQUITECTURA.md`](ARQUITECTURA.md) para el detalle de horarios.
+
+**Fase 6 (validación en paralelo + cutover) — no iniciada.** Queda
+pendiente: correr Canibalización v3 contra la base real, confirmar
+mapeo de consumidores (Power BI, otros scripts) por proyecto, y decidir
+un puñado de puntos de negocio (no técnicos) documentados en
+`PENDIENTES.md`.
 
 ## Setup local
 
