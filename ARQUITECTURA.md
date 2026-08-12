@@ -113,6 +113,27 @@ dbt snapshot --select dim_cliente_tipo_migracion_snapshot
 (el `+` resuelve `fct_ventas_36m` → `fct_ventas_36m_pivotado` →
 `dim_cliente_tipo_migracion` solo, ver nota general abajo)
 
+### Canibalización v3 (eventos de migración) — vía paralela, no reemplaza lo de arriba
+
+Metodología distinta a `dim_cliente_tipo_migracion` (ventana de 24
+meses, eventos de migración por sucursal en vez de acumulado corrido) —
+portada de `canibalizacion_v3.py`, ver `PENDIENTES.md` para el detalle
+de los 2 comportamientos no obvios que hubo que preservar. Sin confirmar
+todavía contra la base real.
+
+```mermaid
+graph TD
+    PIVOT[fct_ventas_36m_pivotado] --> BASE[int_canibalizacion_migracion_base<br/>view]
+    BASE --> EVOL[fct_canibalizacion_evolutivo_cliente<br/>table]
+    EVOL --> EVT[dim_cliente_migracion_eventos<br/>table]
+    EVT --> RES[fct_canibalizacion_migracion_resumen<br/>table]
+```
+
+### Orden de ejecución
+```
+dbt build --select +fct_canibalizacion_migracion_resumen
+```
+
 ---
 
 ## Top 300 Productos

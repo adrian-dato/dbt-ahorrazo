@@ -79,3 +79,99 @@ models:
                   - 'Migro de R2 a SL'
                   - 'Migro de R2 a R1'
                   - 'Migro de R2 a SL y R1'
+
+  - name: int_canibalizacion_migracion_base
+    description: >
+      Reemplaza pasos 2-6 de canibalizacion_v3.py -- ventana móvil de
+      {{ var('canibalizacion_v3_ventana_meses') }} meses anclada al
+      máximo período presente en los datos, exclusión de OCASIONALES,
+      tag Nuevo/Recurrente por fila.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: tipo_global
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Nuevo'
+                  - 'Recurrente'
+
+  - name: fct_canibalizacion_evolutivo_cliente
+    description: >
+      Reemplaza paso 7 de canibalizacion_v3.py (df_largo) -- grano
+      cliente×mes×sucursal, TODOS los clientes de la ventana. Insumo de
+      dim_cliente_migracion_eventos y output para el evolutivo mensual
+      por cliente en PowerBI.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: sucursal
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SL', 'R1', 'R2']
+      - name: monto
+        tests:
+          - not_null
+
+  - name: dim_cliente_migracion_eventos
+    description: >
+      Reemplaza pasos 8-10 de canibalizacion_v3.py (df_eventos) -- 1 fila
+      por evento de migración/dual/único cliente-sucursal. Ver comentario
+      del modelo para el desempate por orden alfabético y el lookup "as
+      of" del origen -- 2 detalles no obvios del código Python que hay
+      que preservar para que el resultado coincida.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: tipo_cliente
+        tests:
+          - not_null
+          - accepted_values:
+              # Las 4 categorías reales observadas en el value_counts()
+              # del script -- si aparece una categoría distinta acá, algo
+              # de la lógica portada no coincide con el original.
+              arguments:
+                values:
+                  - 'Nuevo - Unico'
+                  - 'Nuevo - Dual'
+                  - 'Recurrente - Dual'
+                  - 'Recurrente - Migracion'
+      - name: local_origen
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SL', 'R1', 'R2']
+      - name: local_destino
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SL', 'R1', 'R2']
+
+  - name: fct_canibalizacion_migracion_resumen
+    description: >
+      Reemplaza paso 11 de canibalizacion_v3.py (df_salida) -- resumen
+      agregado por (anio, mes, tipo_cliente, local_origen, local_destino),
+      sin cliente_id_limpio. Mismo grano final que
+      dbo.canibalizacion_sucursales.
+    columns:
+      - name: anio
+        tests:
+          - not_null
+      - name: mes
+        tests:
+          - not_null
+      - name: tipo_cliente
+        tests:
+          - not_null
+      - name: cantidad_clientes
+        tests:
+          - not_null

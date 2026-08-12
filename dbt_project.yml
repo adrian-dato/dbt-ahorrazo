@@ -46,6 +46,13 @@ vars:
   # 0.40; se porta el valor real, no el comentario desactualizado.
   mayoristas_pct_grandes_minimo: 0.40
 
+  # Canibalización v3 -- metodología de eventos de migración
+  # (canibalizacion_v3.py), independiente de meses_ventana_canibalizacion
+  # (36 meses, usado por dim_cliente_tipo_migracion/v1). Mismos valores
+  # que VENTANA_MESES/MESES_MIGRACION en el script.
+  canibalizacion_v3_ventana_meses: 24
+  canibalizacion_v3_meses_migracion: 3
+
 # Sin esto, dbt infiere producto_id como int a partir del CSV (todo
 # dígitos) -- y como producto_id real en la base no es puramente
 # numérico ("1685-G", ni cabe siempre en int, ej. "7506295378"), un JOIN
