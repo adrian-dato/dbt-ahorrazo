@@ -33,7 +33,7 @@ quedan livianos: solo el Python específico de cada uno (scoring,
 notebooks de exploración, DAGs de Airflow), consumiendo por nombre las
 tablas que publica este repo.
 
-Contexto completo, diagnóstico y plan de fases:
+Contexto completo y diagnóstico a nivel portfolio:
 [`../PLAN_MAESTRO_REINGENIERIA.md`](../PLAN_MAESTRO_REINGENIERIA.md).
 
 ## Estado
@@ -43,33 +43,32 @@ puntualmente, ver [`PENDIENTES.md`](PENDIENTES.md); para los diagramas
 de dependencias y el orden de ejecución real, ver
 [`ARQUITECTURA.md`](ARQUITECTURA.md).)*
 
-**Fases 1 a 4 — confirmadas contra la base real.** Fundación (staging +
-`fct_ventas_36m`), migración de `clientes_mapeo_limpio` (con 2 bugs
-reales del proceso legacy encontrados y corregidos en el camino),
-reglas de negocio compartidas (`int_ventas_elegibles`, `int_ventas_12m`)
-y los 3 marts por proyecto: **Canibalización** (v1, `dim_cliente_tipo_migracion`),
+Confirmado contra la base real: la fundación (staging + `fct_ventas_36m`),
+la migración de `clientes_mapeo_limpio` (con 2 bugs reales del proceso
+legacy encontrados y corregidos en el camino), las reglas de negocio
+compartidas (`int_ventas_elegibles`, `int_ventas_12m`) y los 3 marts
+por proyecto: **Canibalización** (v1, `dim_cliente_tipo_migracion`),
 **Top 300 Productos** (`top300_ranking`) y **Clientes Mayoristas**
-(`dim_clientes_mayoristas`). Los 3 con snapshots SCD2 (`dbt snapshot`)
-donde corresponde.
+(`dim_clientes_mayoristas`), con snapshots SCD2 (`dbt snapshot`) donde
+corresponde.
 
 **Canibalización v3** (metodología nueva, eventos de migración
-cliente→sucursal — vía paralela a v1, no la reemplaza): código portado
-y listo, **primera corrida contra la base real pendiente** — es el
+cliente→sucursal — vía paralela a v1, no la reemplaza) tiene el código
+portado y listo, pero todavía no corrió contra la base real: es el
 próximo paso técnico del repo.
 
-**Fase 5 (orquestación) — cerrada.** Los 3 proyectos corren en
-producción vía Airflow, en un repo separado
+**Orquestación**: los 3 proyectos ya corren en producción vía Airflow,
+en un repo separado
 ([`orquestacion_ahorrazo`](../orquestacion_ahorrazo), sibling de este)
 que se suma al Airflow dockerizado que ya opera el equipo de Stock en
 el mismo Windows Server — DAGs propios e independientes, sin acoplarse
 a la orquestación de Stock. Ver la sección "Orquestación (Airflow)" en
 [`ARQUITECTURA.md`](ARQUITECTURA.md) para el detalle de horarios.
 
-**Fase 6 (validación en paralelo + cutover) — no iniciada.** Queda
-pendiente: correr Canibalización v3 contra la base real, confirmar
-mapeo de consumidores (Power BI, otros scripts) por proyecto, y decidir
-un puñado de puntos de negocio (no técnicos) documentados en
-`PENDIENTES.md`.
+Falta: correr Canibalización v3 contra la base real, confirmar el
+mapeo de consumidores (Power BI, otros scripts) antes de apagar
+cualquier proceso legacy, y un puñado de decisiones de negocio (no
+técnicas) documentadas en `PENDIENTES.md`.
 
 ## Setup local
 
@@ -98,11 +97,11 @@ selectors, `--full-refresh`), ver **[`COMANDOS.md`](COMANDOS.md)**.
 Con `.env`/`profiles.yml` en la misma carpeta que el resto del proyecto
 (ambos gitignorados), copiar el repo entero a otro server (scp/rsync
 después de un `git pull`) alcanza para que dbt funcione ahí también --
-no hace falta recrear nada por separado en `~/.dbt/`. Si en algún
-momento se corre desde Airflow (Fase 5), setear `DBT_PROFILES_DIR` como
-variable de entorno de la tarea (o, mejor todavía en ese momento, migrar
-las credenciales a Airflow Connections en vez de a este `.env` -- ver
-plan maestro, sección de secretos).
+no hace falta recrear nada por separado en `~/.dbt/`. Al correr desde
+Airflow (ya el caso en producción, ver `orquestacion_ahorrazo`),
+`DBT_PROFILES_DIR` se setea como variable de entorno de la tarea (o,
+mejor todavía, migrar las credenciales a Airflow Connections en vez de
+a este `.env` -- ver plan maestro, sección de secretos).
 
 ## Convenciones de nombres
 
