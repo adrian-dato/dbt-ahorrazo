@@ -70,9 +70,21 @@ sources:
           - name: ci_ruc
 
       - name: productos
-        description: Catálogo de productos, usado para filtrar por empresa y excluir categorías (bolsas, egresos, servicios) vía int_ventas_elegibles.
+        description: >
+          Catálogo de productos. Usado para filtrar por empresa y excluir
+          categorías (bolsas, egresos, servicios) vía int_ventas_elegibles,
+          y como fuente de atributos de producto (nombre, marca, categorías,
+          unidad de medida) para tableros que antes no tenían esta info --
+          ver stg_productos.
         columns:
           - name: producto_id
           - name: id_empresa
           - name: categoria_1
           - name: categoria_2
+          - name: categoria_3
+          - name: categoria_4
+          - name: categoria_5
+          - name: nonbre
+            description: Nombre del producto -- así está escrito en el origen (typo real, no un error de transcripción). Se corrige a "nombre" en stg_productos.
+          - name: marca
+          - name: unidad_medida

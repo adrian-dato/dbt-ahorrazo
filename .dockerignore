@@ -1,0 +1,15 @@
+# La imagen solo necesita requirements.txt (ver Dockerfile -- el
+# proyecto se monta en runtime, no se copia). Esto es cinturón y
+# tirantes: aunque el Dockerfile no haga COPY . ., que .env nunca pueda
+# terminar en una capa de la imagen por accidente si alguien lo agrega
+# a mano más adelante.
+.env
+.venv/
+target/
+dbt_packages/
+logs/
+.git/
+__pycache__/
+*.pyc
+.vscode/
+.user.yml
