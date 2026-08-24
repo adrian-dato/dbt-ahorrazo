@@ -103,6 +103,9 @@ models:
       mayoristas_v3_tickets_unidad -- son 2 umbrales distintos, uno
       sobre tickets individuales, este sobre el comportamiento agregado
       del cliente). C2 con piso mínimo (var mayoristas_pct_grandes_minimo).
+      Q3 de upt/pct_tickets_grandes se calcula en ramas separadas por
+      unidad_medida (UNION ALL), mismo motivo que en
+      mayoristas_v3_tickets_unidad -- ver comentario del modelo.
       Insumo de mayoristas_v3_resumen (combina "cumple en cualquier
       unidad") y mayoristas_v3_umbrales (referencia de metodología).
     columns:
