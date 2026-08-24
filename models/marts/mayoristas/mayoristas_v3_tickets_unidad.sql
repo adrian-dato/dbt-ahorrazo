@@ -48,6 +48,14 @@
 -- rama, cada unidad_medida se paraleliza libre por su cuenta. Resultado
 -- idéntico al de la ventana: misma fórmula, mismas filas de entrada por
 -- unidad, solo cambia cómo el motor llega al número.
+--
+-- El OVER() vacío es obligatorio -- a diferencia de Postgres/Oracle,
+-- PERCENTILE_CONT en T-SQL solo existe como función de ventana, nunca
+-- como agregado simple con GROUP BY (falla con el error 10753 sin
+-- OVER). No es un PARTITION BY: cada rama ya viene filtrada a una sola
+-- unidad_medida, así que OVER() vacío es "toda la rama es la
+-- partición" -- no reintroduce la columna despareja. El DISTINCT
+-- colapsa las filas repetidas (mismo valor en cada fila de la rama).
 
 {{ config(materialized='table') }}
 
@@ -55,10 +63,10 @@
 
 with umbrales as (
     {% for u in unidades_relevantes %}
-    select
+    select distinct
         '{{ u }}' as unidad_medida,
-        percentile_cont(0.25) within group (order by unidades) as q1,
-        percentile_cont(0.75) within group (order by unidades) as q3
+        percentile_cont(0.25) within group (order by unidades) over () as q1,
+        percentile_cont(0.75) within group (order by unidades) over () as q3
     from {{ ref('int_mayoristas_v3_tickets_por_unidad') }}
     where unidad_medida = '{{ u }}'
     {% if not loop.last %}union all{% endif %}

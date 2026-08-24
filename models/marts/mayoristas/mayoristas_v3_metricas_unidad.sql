@@ -26,6 +26,12 @@
 -- fila por cliente x unidad_medida, no por ticket), así que no llegó a
 -- colgar la base, pero el mismo fix aplica por consistencia y evita que
 -- vuelva a pasar si la base de clientes crece.
+--
+-- El OVER() vacío es obligatorio -- a diferencia de Postgres/Oracle,
+-- PERCENTILE_CONT en T-SQL solo existe como función de ventana, nunca
+-- como agregado simple con GROUP BY (falla con el error 10753 sin
+-- OVER). No es un PARTITION BY: cada rama ya viene filtrada a una sola
+-- unidad_medida. El DISTINCT colapsa las filas repetidas.
 
 {{ config(materialized='table') }}
 
@@ -44,10 +50,10 @@ with metricas as (
 
 percentiles as (
     {% for u in unidades_relevantes %}
-    select
+    select distinct
         '{{ u }}' as unidad_medida,
-        percentile_cont(0.75) within group (order by upt) as q3_upt,
-        percentile_cont(0.75) within group (order by pct_tickets_grandes) as q3_pct
+        percentile_cont(0.75) within group (order by upt) over () as q3_upt,
+        percentile_cont(0.75) within group (order by pct_tickets_grandes) over () as q3_pct
     from metricas
     where unidad_medida = '{{ u }}'
     {% if not loop.last %}union all{% endif %}
