@@ -35,20 +35,50 @@ models:
       Reemplaza dbo.clientes_limpio (proceso legacy clientes_mapeo_limpio.sql).
       Excluye clientes no identificables, mismo criterio que
       int_clientes_mapeo_limpio. Corre en paralelo al proceso legacy --
-      todavía no lo reemplaza como source de ningún mart.
+      todavía no lo reemplaza como source de ningún mart. tipo_persona
+      reemplaza el CASE hardcodeado (prefijos '800'/'801'/'802') de
+      view_ventas_ahorrazo_filtradas_12m -- ver comentario del modelo.
     columns:
       - name: cliente_id_limpio
         tests:
           - not_null
           - unique
+      - name: tipo_persona
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Fisico'
+                  - 'Juridico'
+
+  - name: int_productos_limpio
+    description: >
+      Única fuente de verdad de "producto elegible para análisis"
+      (empresa, categoría_1/2, producto excluido) + categorías limpias.
+      int_ventas_elegibles hace INNER JOIN acá en vez de repetir el
+      filtro. categoria_4_limpio: fallback a categoria_3 cuando
+      categoria_4 = 'sin asignar.' (placeholder real de la fuente).
+    columns:
+      - name: producto_id
+        tests:
+          - not_null
+          - unique
+      - name: categoria_4_limpio
+        tests:
+          - not_null
 
   - name: int_ventas_elegibles
     description: >
       Única fuente de verdad de "venta válida para análisis" -- unifica
-      las reglas de exclusión (empresa, categoría, cliente de test,
-      producto excluido) que antes vivían duplicadas en 3 lugares
+      las reglas de exclusión (cliente de test del lado de la venta;
+      empresa/categoría/producto excluido del lado del producto, vía
+      int_productos_limpio) que antes vivían duplicadas en 3 lugares
       distintos entre los 3 proyectos. Usa stg_clientes_mapeo (legacy),
       no int_clientes_mapeo_limpio todavía -- ver PENDIENTES.md.
+      tipo_persona calculado directo acá (misma macro que int_clientes_limpio,
+      ver macros/clasificar_tipo_persona.sql) -- así cubre también a los
+      clientes huérfanos, que int_clientes_limpio no tiene.
     columns:
       - name: producto_id
         tests:
@@ -56,6 +86,14 @@ models:
       - name: pdv_id
         tests:
           - not_null
+      - name: tipo_persona
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Fisico'
+                  - 'Juridico'
 
   - name: int_ventas_12m
     description: >
