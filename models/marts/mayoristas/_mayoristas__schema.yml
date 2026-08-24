@@ -37,3 +37,107 @@ models:
           - accepted_values:
               arguments:
                 values: ['Alto', 'Medio', 'Potencial', 'Minorista']
+
+  - name: mayoristas_v3_tickets_unidad
+    description: >
+      Metodología v3 (todavía prototipo, no reemplaza a
+      int_mayoristas_umbral_ticket_grande/int_mayoristas_metricas_cliente
+      -- ver PENDIENTES.md). Grano cliente_id_limpio x ticket_id x
+      unidad_medida -- responde "¿por qué ESTA factura contó como ticket
+      grande?" a nivel de factura individual, no un promedio mensual.
+      umbral_ticket_grande = Q3 + 3xIQR calculado POR SEPARADO en cada
+      unidad_medida (a diferencia del umbral único y mezclado de v2) --
+      solo Unid/KILOS/LITROS/Pack, las únicas 4 unidades con volumen y
+      variancia real. Fuente directa de la página "historial de
+      facturas" del tablero de Mayoristas, e insumo de
+      mayoristas_v3_metricas_unidad.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: ticket_id
+        tests:
+          - not_null
+      - name: unidad_medida
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: ticket_grande
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+  - name: mayoristas_v3_metricas_unidad
+    description: >
+      Metodología v3 -- C1 (UPT alto) y C2 (% tickets grandes) por
+      (cliente_id_limpio, unidad_medida), cada uno con su propio umbral
+      Q3 entre clientes (percentil 75, NO el Q3+3xIQR de
+      mayoristas_v3_tickets_unidad -- son 2 umbrales distintos, uno
+      sobre tickets individuales, este sobre el comportamiento agregado
+      del cliente). C2 con piso mínimo (var mayoristas_pct_grandes_minimo).
+      Insumo de mayoristas_v3_resumen (combina "cumple en cualquier
+      unidad") y mayoristas_v3_umbrales (referencia de metodología).
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: unidad_medida
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: c1_upt_alto
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: c2_pct_grandes_alto
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+  - name: mayoristas_v3_resumen
+    description: >
+      Metodología v3 -- tabla final de clasificación, grano
+      cliente_id_limpio. Puntaje 0-3 y nivel_mayorista, análogo a
+      dim_clientes_mayoristas (v2) pero con C1/C2 corregidos por
+      unidad_medida (ver mayoristas_v3_metricas_unidad). C3 es GLOBAL
+      (todas las unidades de medida, no solo las 4 de C1/C2) y usa venta
+      PROMEDIO por ticket, no la suma total del período -- ver
+      comentario del modelo. TODAVÍA PROTOTIPO, no reemplaza a
+      dim_clientes_mayoristas como fuente de producción -- ver
+      PENDIENTES.md.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique
+      - name: nivel_mayorista
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Alto', 'Medio', 'Potencial', 'Minorista']
+
+  - name: mayoristas_v3_umbrales
+    description: >
+      Tabla de referencia (1 fila por unidad_medida) con los 3 cortes de
+      la metodología v3 -- para un tile/tooltip de metodología en Power
+      BI. No calcula nada nuevo, junta valores ya constantes de
+      mayoristas_v3_tickets_unidad y mayoristas_v3_metricas_unidad.
+    columns:
+      - name: unidad_medida
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ['Unid', 'KILOS', 'LITROS', 'Pack']
