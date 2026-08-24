@@ -4,6 +4,14 @@
 -- 4). Consumido por mayoristas_v3_resumen (combina "cumple en cualquier
 -- unidad") y mayoristas_v3_umbrales (referencia de metodología).
 --
+-- Mismas 9 columnas, mismo orden, que marts_mayoristas.mayoristas_v3_detalle_unidad
+-- -- la tabla que el notebook viejo escribía directo a la base por
+-- pandas antes de portar esto a dbt. Esa tabla sigue existiendo
+-- físicamente (dbt no la toca ni la borra), pero quedó congelada en la
+-- última corrida del notebook -- no se actualiza más. Cualquier
+-- consumidor que todavía le apunte (ej. el tablero de Power BI viejo)
+-- tiene que repuntar acá.
+--
 -- Ojo, hay 2 umbrales "Q3+IQR" distintos en esta metodología, no
 -- confundirlos:
 --   - umbral_ticket_grande (en mayoristas_v3_tickets_unidad): Q3+3xIQR

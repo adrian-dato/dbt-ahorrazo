@@ -159,7 +159,11 @@ models:
       Tabla de referencia (1 fila por unidad_medida) con los 3 cortes de
       la metodología v3 -- para un tile/tooltip de metodología en Power
       BI. No calcula nada nuevo, junta valores ya constantes de
-      mayoristas_v3_tickets_unidad y mayoristas_v3_metricas_unidad.
+      mayoristas_v3_tickets_unidad y mayoristas_v3_metricas_unidad. El
+      join saca primero el DISTINCT por unidad_medida de cada tabla por
+      separado antes de unirlas -- unir las dos tablas grandes
+      directamente por unidad_medida (solo 4 valores) arma un producto
+      cartesiano completo, ver comentario del modelo.
     columns:
       - name: unidad_medida
         tests:

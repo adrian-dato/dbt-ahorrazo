@@ -3,8 +3,8 @@
 -- grande'?", que es lo que un analista necesita para justificar la
 -- clasificación de un cliente puntual, no un promedio mensual que ya
 -- perdió el detalle de la factura individual. Es el insumo de
--- mayoristas_v3_detalle_unidad/mayoristas_v3_resumen (agregan esto por
--- cliente), y a la vez la fuente directa de la página "historial de
+-- mayoristas_v3_metricas_unidad (agrega esto por cliente), y a la vez
+-- la fuente directa de la página "historial de
 -- facturas" del tablero de Power BI -- no hace falta bajar a línea de
 -- producto (esa consulta, si hace falta puntual, es un drillthrough
 -- aparte contra int_ventas_elegibles filtrado a 1 ticket_id, no este
