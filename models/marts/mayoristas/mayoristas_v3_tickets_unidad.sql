@@ -32,40 +32,37 @@
 -- notebook.
 --
 -- umbral_ticket_grande = Q3 + 3xIQR de unidades por ticket, calculado
--- POR SEPARADO en cada unidad_medida (PARTITION BY en el PERCENTILE_CONT
--- de abajo) -- a diferencia de int_mayoristas_umbral_ticket_grande (v2),
--- que calcula un único umbral global mezclando todas las unidades, este
--- es el fix central de v3. El multiplicador es 3 (no el 1.5 que usa
--- v2) -- decisión explícita del usuario, ver PENDIENTES.md.
+-- POR SEPARADO en cada unidad_medida -- a diferencia de
+-- int_mayoristas_umbral_ticket_grande (v2), que calcula un único umbral
+-- global mezclando todas las unidades, este es el fix central de v3. El
+-- multiplicador es 3 (no el 1.5 que usa v2) -- decisión explícita del
+-- usuario, ver PENDIENTES.md.
+--
+-- Q1/Q3 se calculan en ramas separadas por unidad_medida (UNION ALL),
+-- no con PERCENTILE_CONT(...) OVER (PARTITION BY unidad_medida): la
+-- distribución entre las 4 unidades es muy despareja (Unid + KILOS son
+-- >99% de los tickets), y particionar la ventana por esa columna fuerza
+-- al motor a repartir el trabajo paralelo por ahí, dejando 2-3 threads
+-- cargando casi todas las filas mientras decenas de otros quedan
+-- ociosos -- esto tumbó la base la primera vez que corrió. Separado por
+-- rama, cada unidad_medida se paraleliza libre por su cuenta. Resultado
+-- idéntico al de la ventana: misma fórmula, mismas filas de entrada por
+-- unidad, solo cambia cómo el motor llega al número.
 
 {{ config(materialized='table') }}
 
-with tickets_por_unidad as (
-    select
-        v.cliente_id_limpio,
-        v.ticket_id,
-        p.unidad_medida,
-        min(v.fecha_venta) as fecha_venta,  -- 1 sola fecha real por ticket, min() solo por sintaxis de group by
-        sum(v.unidades)    as unidades,
-        sum(v.venta_gs)    as venta_gs
-    from {{ ref('int_ventas_12m') }} v
-    inner join {{ ref('int_productos_limpio') }} p
-        on v.producto_id = p.producto_id
-    where p.unidad_medida in ('Unid', 'KILOS', 'LITROS', 'Pack')
-    group by v.cliente_id_limpio, v.ticket_id, p.unidad_medida
-    having sum(v.unidades) > 0  -- excluye devoluciones, mismo criterio que el resto del proyecto
-),
+{% set unidades_relevantes = ['Unid', 'KILOS', 'LITROS', 'Pack'] %}
 
--- PERCENTILE_CONT en SQL Server es una función de ventana (necesita
--- OVER()), no un agregado simple -- con PARTITION BY unidad_medida da
--- el mismo par (q1, q3) repetido en cada fila de esa unidad, por eso el
--- DISTINCT para quedarse con 1 fila por unidad_medida.
-umbrales as (
-    select distinct
-        unidad_medida,
-        percentile_cont(0.25) within group (order by unidades) over (partition by unidad_medida) as q1,
-        percentile_cont(0.75) within group (order by unidades) over (partition by unidad_medida) as q3
-    from tickets_por_unidad
+with umbrales as (
+    {% for u in unidades_relevantes %}
+    select
+        '{{ u }}' as unidad_medida,
+        percentile_cont(0.25) within group (order by unidades) as q1,
+        percentile_cont(0.75) within group (order by unidades) as q3
+    from {{ ref('int_mayoristas_v3_tickets_por_unidad') }}
+    where unidad_medida = '{{ u }}'
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
 )
 
 select
@@ -80,6 +77,6 @@ select
         when t.unidades > u.q3 + 3 * (u.q3 - u.q1) then 1
         else 0
     end as ticket_grande
-from tickets_por_unidad t
+from {{ ref('int_mayoristas_v3_tickets_por_unidad') }} t
 inner join umbrales u
     on t.unidad_medida = u.unidad_medida

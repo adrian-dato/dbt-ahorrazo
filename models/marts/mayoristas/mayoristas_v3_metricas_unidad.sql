@@ -17,11 +17,19 @@
 -- valor 0.40 que ya usa dim_clientes_mayoristas en v2) -- nunca baja de
 -- ese piso aunque el percentil 75 real del universo dé menos.
 --
--- PERCENTILE_CONT en SQL Server es función de ventana (necesita OVER()),
--- no un agregado simple -- con PARTITION BY unidad_medida da el mismo
--- valor repetido en cada fila de esa unidad, por eso el DISTINCT.
+-- Q3 de upt/pct_tickets_grandes se calcula en ramas separadas por
+-- unidad_medida (UNION ALL), no con PERCENTILE_CONT(...) OVER
+-- (PARTITION BY unidad_medida) -- mismo motivo que en
+-- mayoristas_v3_tickets_unidad: particionar la ventana por una columna
+-- tan despareja (Unid+KILOS >99% de las filas) fuerza al motor a
+-- repartir mal el trabajo paralelo. Acá el volumen es mucho menor (una
+-- fila por cliente x unidad_medida, no por ticket), así que no llegó a
+-- colgar la base, pero el mismo fix aplica por consistencia y evita que
+-- vuelva a pasar si la base de clientes crece.
 
 {{ config(materialized='table') }}
+
+{% set unidades_relevantes = ['Unid', 'KILOS', 'LITROS', 'Pack'] %}
 
 with metricas as (
     select
@@ -35,11 +43,15 @@ with metricas as (
 ),
 
 percentiles as (
-    select distinct
-        unidad_medida,
-        percentile_cont(0.75) within group (order by upt) over (partition by unidad_medida) as q3_upt,
-        percentile_cont(0.75) within group (order by pct_tickets_grandes) over (partition by unidad_medida) as q3_pct
+    {% for u in unidades_relevantes %}
+    select
+        '{{ u }}' as unidad_medida,
+        percentile_cont(0.75) within group (order by upt) as q3_upt,
+        percentile_cont(0.75) within group (order by pct_tickets_grandes) as q3_pct
     from metricas
+    where unidad_medida = '{{ u }}'
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
 ),
 
 umbrales as (

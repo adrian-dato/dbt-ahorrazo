@@ -44,11 +44,27 @@ Cadena completa, ya portada a dbt (antes vivía entera en el notebook,
 escribiendo a mano por pandas):
 
 ```
-mayoristas_v3_tickets_unidad         (cliente x ticket x unidad_medida -- C1/C2)
-    -> mayoristas_v3_metricas_unidad (cliente x unidad_medida -- umbrales + c1/c2)
-        -> mayoristas_v3_resumen     (cliente -- puntaje/nivel final, TABLA DE PRODUCCIÓN de v3)
-        -> mayoristas_v3_umbrales    (1 fila x unidad_medida -- referencia de metodología)
+int_mayoristas_v3_tickets_por_unidad     (cliente x ticket x unidad_medida -- agregación base)
+    -> mayoristas_v3_tickets_unidad      (cliente x ticket x unidad_medida -- C1/C2)
+        -> mayoristas_v3_metricas_unidad (cliente x unidad_medida -- umbrales + c1/c2)
+            -> mayoristas_v3_resumen     (cliente -- puntaje/nivel final, TABLA DE PRODUCCIÓN de v3)
+            -> mayoristas_v3_umbrales    (1 fila x unidad_medida -- referencia de metodología)
 ```
+
+`int_mayoristas_v3_tickets_por_unidad` se separó de
+`mayoristas_v3_tickets_unidad` (donde antes vivía como CTE) después de
+que el primer build real colgara la instancia: el cálculo de Q1/Q3 por
+`unidad_medida` usaba `PERCENTILE_CONT(...) OVER (PARTITION BY
+unidad_medida)`, y con `Unid`+`KILOS` concentrando >99% de los tickets,
+esa partición fuerza al motor a repartir el trabajo paralelo de forma
+muy despareja (confirmado con `sys.dm_os_tasks`: 3 threads de 40
+cargando casi todo, el resto ocioso). Se reemplazó por 4 ramas
+independientes (`UNION ALL`, una por unidad_medida) con exactamente la
+misma fórmula sobre las mismas filas -- resultado idéntico, pero cada
+rama se paraleliza libre por su cuenta en vez de competir por el mismo
+carril. Separar la agregación base en su propio modelo evita, además,
+que esas 4 ramas más el join final recalculen el `GROUP BY` sobre
+`int_ventas_12m` cinco veces.
 
 `mayoristas_v3_resumen` lee además `int_ventas_12m` directo (no pasa por
 `mayoristas_v3_tickets_unidad`) para C3, que es global -- entran todas
