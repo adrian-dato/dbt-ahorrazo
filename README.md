@@ -57,6 +57,16 @@ cliente→sucursal — vía paralela a v1, no la reemplaza) tiene el código
 portado y listo, pero todavía no corrió contra la base real: es el
 próximo paso técnico del repo.
 
+**Mayoristas v3** (metodología nueva, corrige un bug real de v2 que
+mezclaba unidades de medida distintas en un solo número — vía paralela
+a v2, no la reemplaza todavía) tiene el código portado y ya corrió
+contra la base real hasta `mayoristas_v3_resumen`. La primera corrida
+encontró 3 problemas de performance/sintaxis en las queries (una de
+ellas llegó a colgar la instancia compartida de SQL Server), ya
+corregidos — el último modelo de la cadena (`mayoristas_v3_umbrales`)
+tiene el fix aplicado pero sin confirmar todavía que corra limpio. Ver
+`models/marts/mayoristas/README.md` para el detalle.
+
 **Orquestación**: los 3 proyectos ya corren en producción vía Airflow,
 en un repo separado
 ([`orquestacion_ahorrazo`](../orquestacion_ahorrazo), sibling de este)

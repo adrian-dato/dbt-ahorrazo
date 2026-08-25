@@ -66,6 +66,43 @@ carril. Separar la agregación base en su propio modelo evita, además,
 que esas 4 ramas más el join final recalculen el `GROUP BY` sobre
 `int_ventas_12m` cinco veces.
 
+La corrida real posterior encontró 2 problemas más, ya corregidos:
+
+1. **Error de sintaxis** (`PERCENTILE_CONT` requiere `OVER()` en T-SQL
+   siempre, a diferencia de Postgres/Oracle donde puede ser agregado
+   simple con `GROUP BY` -- falla con el error 10753 sin `OVER`). Se
+   agregó `OVER()` vacío (sin `PARTITION BY`) a cada rama del `UNION
+   ALL`, más `DISTINCT` para colapsar las filas repetidas -- no
+   reintroduce el problema de skew porque cada rama ya viene filtrada a
+   una sola unidad_medida.
+2. **`mayoristas_v3_umbrales` armaba un producto cartesiano**: unía
+   `mayoristas_v3_tickets_unidad` (grano ticket, millones de filas) con
+   `mayoristas_v3_metricas_unidad` (grano cliente, hasta ~1,6M filas)
+   directo por `unidad_medida` (solo 4 valores posibles) -- eso arma el
+   cruce completo de cada lado antes de que el `GROUP BY` + `MAX()` lo
+   colapse de vuelta a 1 fila por unidad, y volvió a colgar la base.
+   Corregido sacando primero el `DISTINCT` de cada tabla por separado
+   (cada una ya trae un solo valor por unidad_medida) y uniendo recién
+   esos dos resultados de 4 filas.
+
+**Estado al cierre de esta sesión**: con los 3 fixes aplicados,
+`int_mayoristas_v3_tickets_por_unidad` → `mayoristas_v3_tickets_unidad`
+→ `mayoristas_v3_metricas_unidad` → `mayoristas_v3_resumen` corrieron
+bien contra la base real (confirmado -- Power BI ya consulta
+`mayoristas_v3_resumen` sin problema). `mayoristas_v3_umbrales`, con el
+fix del cartesiano aplicado, **todavía no se confirmó que haya
+terminado de correr** -- quedó pendiente verificar.
+
+También durante esta sesión se confirmó que `marts_mayoristas.mayoristas_v3_detalle_unidad`
+(774.619 filas) es una tabla física que sigue existiendo en la base,
+escrita directo por `analisis_mayoristas_v3.ipynb` vía pandas ANTES del
+port a dbt -- dbt no la toca ni la actualiza, quedó congelada. Sus 9
+columnas son idénticas, mismo nombre y orden, a las de
+`mayoristas_v3_metricas_unidad`: es su predecesora directa. Un tablero
+de Power BI viejo la sigue consultando directo (`Item="mayoristas_v3_detalle_unidad"`
+en Power Query) -- hay que repuntarlo a `mayoristas_v3_metricas_unidad`
+antes de borrar la tabla vieja.
+
 `mayoristas_v3_resumen` lee además `int_ventas_12m` directo (no pasa por
 `mayoristas_v3_tickets_unidad`) para C3, que es global -- entran todas
 las unidades de medida, no solo las 4 con C1/C2.

@@ -156,6 +156,39 @@ models:
               arguments:
                 values: ['SL', 'R1', 'R2']
 
+  - name: fct_ventas_agrupadas_24m
+    description: >
+      Reemplaza scripts-sql-ahorrazo/prod/ventas_agrupadas_24m.sql
+      (dbo.ventas_ahorrazo_agrupadas_24m) -- tabla fuente de un .pbix de
+      Canibalización que nunca se orquestó. Grano mes x cliente_id_limpio
+      x pdv_id x categoria_1-4 x marca x tipo_persona. Ventana de
+      {{ var('fct_ventas_agrupadas_ventana_meses') }} meses ANCLADA AL
+      MÁXIMO PERÍODO EN LOS DATOS (no a GETDATE() como el legacy) --
+      mismo criterio que int_canibalizacion_migracion_base. Usa los
+      filtros de producto/tipo_persona actuales del proyecto
+      (int_productos_limpio / clasificar_tipo_persona), más estrictos
+      que el legacy -- ver comentario del modelo para el detalle
+      completo de las 3 decisiones tomadas distinto a propósito.
+    columns:
+      - name: periodo
+        tests:
+          - not_null
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: pdv_id
+        tests:
+          - not_null
+      - name: unidades
+        tests:
+          - not_null
+      - name: venta_gs
+        tests:
+          - not_null
+      - name: cant_tickets
+        tests:
+          - not_null
+
   - name: fct_canibalizacion_migracion_resumen
     description: >
       Reemplaza paso 11 de canibalizacion_v3.py (df_salida) -- resumen

@@ -53,6 +53,13 @@ vars:
   canibalizacion_v3_ventana_meses: 24
   canibalizacion_v3_meses_migracion: 3
 
+  # fct_ventas_agrupadas_24m -- reemplazo de
+  # scripts-sql-ahorrazo/prod/ventas_agrupadas_24m.sql. Var propia, no
+  # reutiliza canibalizacion_v3_ventana_meses aunque hoy valga lo mismo
+  # (24): son 2 modelos independientes, cambiar la ventana de uno no
+  # debería mover la del otro sin querer.
+  fct_ventas_agrupadas_ventana_meses: 24
+
 # Sin esto, dbt infiere producto_id como int a partir del CSV (todo
 # dígitos) -- y como producto_id real en la base no es puramente
 # numérico ("1685-G", ni cabe siempre en int, ej. "7506295378"), un JOIN
