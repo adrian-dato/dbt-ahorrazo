@@ -1,5 +1,5 @@
 -- Única fuente de verdad para "qué es una venta válida para análisis"
--- (hallazgo del plan maestro: esta regla estaba duplicada e inconsistente
+-- (esta regla estaba duplicada e inconsistente
 -- en 3 lugares -- proc_1_ventas_36m_agrupado.sql, la vista RFM
 -- (ventas_filtradas_12m_usar_este_rfm_clustering.sql), y una lista
 -- hardcodeada aparte en top_300_productos.ipynb, celda con
@@ -19,7 +19,7 @@
 --
 -- IMPORTANTE: usa stg_clientes_mapeo (fuente legacy todavía), NO
 -- int_clientes_mapeo_limpio -- ese cambio se hace recién cuando la
--- Fase 2 esté validada (ver PENDIENTES.md, no usar antes de eso).
+-- limpieza de clientes esté validada. No usar antes de eso.
 --
 -- fct_ventas_36m (Canibalización) ya consume este modelo (migrado --
 -- antes tenía su propia copia inline de estas mismas reglas). Efecto de
