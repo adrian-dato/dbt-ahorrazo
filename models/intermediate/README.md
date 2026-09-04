@@ -13,8 +13,10 @@ y contacto. Incluyen correcciones que salieron de perfilar los datos reales
 identificación válida). El detalle de cada regla está comentado en
 `int_clientes_mapeo_limpio.sql`.
 
-Estos tres corren en paralelo al proceso legacy. Los marts todavía leen
-`stg_clientes_mapeo` y `stg_clientes_limpio`, hasta que la validación termine.
+Ya reemplazaron al proceso legacy: `stg_clientes_mapeo` y `stg_clientes_limpio`
+repuntan a `int_clientes_mapeo_limpio` e `int_clientes_limpio` desde la Fase 2
+(confirmada contra la base real), y ningún modelo del proyecto vuelve a leer
+`dbo.clientes_mapeo`/`dbo.clientes_limpio`.
 
 **`int_ventas_elegibles`** define qué es una venta válida para análisis, y es el
 único lugar donde vive esa definición. Antes estaba escrita tres veces, de tres
