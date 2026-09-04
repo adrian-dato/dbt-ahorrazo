@@ -1,4 +1,4 @@
-"""Lee target/run_results.json (generado por dbt en cada invocación) y
+"""Lee target/run_results.json, que dbt escribe en cada invocación, y
 imprime un resumen de una línea por nodo: estado, tiempo, y el primer
 renglón del error si falló. Se invoca automáticamente desde el wrapper
 de `dbt` en activar.sh -- no hace falta correrlo a mano.
