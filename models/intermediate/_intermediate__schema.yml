@@ -19,8 +19,9 @@ models:
       Incremental, lookback de {{ var('dias_lookback_incremental') }} días
       para detectar cliente_id nuevos en Ventas_Ahorrazo. Excluye clientes
       no identificables (cliente_id sin ningún dígito) -- no aparecen en
-      esta tabla ni con cliente_id_limpio NULL. Corre en paralelo al
-      proceso legacy -- todavía no lo reemplaza como source de ningún mart.
+      esta tabla ni con cliente_id_limpio NULL. Fase 2 confirmada:
+      stg_clientes_mapeo repunta acá (ya no a dbo.clientes_mapeo), así que
+      alimenta a los 3 proyectos del portfolio a través de ese wrapper.
     columns:
       - name: cliente_id
         tests:
@@ -34,9 +35,9 @@ models:
     description: >
       Reemplaza dbo.clientes_limpio (proceso legacy clientes_mapeo_limpio.sql).
       Excluye clientes no identificables, mismo criterio que
-      int_clientes_mapeo_limpio. Corre en paralelo al proceso legacy --
-      todavía no lo reemplaza como source de ningún mart. tipo_persona
-      reemplaza el CASE hardcodeado (prefijos '800'/'801'/'802') de
+      int_clientes_mapeo_limpio. Fase 2 confirmada: stg_clientes_limpio
+      repunta acá (ya no a dbo.clientes_limpio). tipo_persona reemplaza
+      el CASE hardcodeado (prefijos '800'/'801'/'802') de
       view_ventas_ahorrazo_filtradas_12m -- ver comentario del modelo.
     columns:
       - name: cliente_id_limpio
@@ -74,8 +75,11 @@ models:
       las reglas de exclusión (cliente de test del lado de la venta;
       empresa/categoría/producto excluido del lado del producto, vía
       int_productos_limpio) que antes vivían duplicadas en 3 lugares
-      distintos entre los 3 proyectos. Usa stg_clientes_mapeo (legacy),
-      no int_clientes_mapeo_limpio todavía -- ver PENDIENTES.md.
+      distintos entre los 3 proyectos. Hace join contra stg_clientes_mapeo,
+      que desde la Fase 2 ya no lee de dbo.clientes_mapeo sino de
+      int_clientes_mapeo_limpio -- se mantiene el join a través del
+      wrapper (no directo a int_clientes_mapeo_limpio) porque ahí ya
+      están hechos los casts a varchar(50) que este join necesita.
       tipo_persona calculado directo acá (misma macro que int_clientes_limpio,
       ver macros/clasificar_tipo_persona.sql) -- así cubre también a los
       clientes huérfanos, que int_clientes_limpio no tiene.

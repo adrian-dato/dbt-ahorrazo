@@ -16,8 +16,10 @@
 -- view_ventas_ahorrazo_filtradas_12m. Misma macro que usa
 -- int_ventas_elegibles -- 1 sola definición de la regla, 2 lugares
 -- donde conviene tener la columna materializada.
--- Pendiente de validar contra la base real antes de reemplazar el CASE
--- legacy en ningún consumidor (ver analyses/validar_tipo_persona.sql).
+-- Es la regla vigente: el CASE legacy que esto reemplaza ya está en
+-- desuso, así que se sacó el analysis que comparaba contra él
+-- (validar_tipo_persona.sql) -- no queda ningún consumidor corriendo
+-- todavía la versión anterior.
 
 {{ config(materialized='table') }}
 

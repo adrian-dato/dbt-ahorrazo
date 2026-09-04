@@ -17,9 +17,11 @@
 -- View, sin materializar: cada mart consumidor define su propia ventana
 -- de fechas sobre este resultado, acá no se fija ninguna.
 --
--- IMPORTANTE: usa stg_clientes_mapeo (fuente legacy todavía), NO
--- int_clientes_mapeo_limpio -- ese cambio se hace recién cuando la
--- limpieza de clientes esté validada. No usar antes de eso.
+-- Usa stg_clientes_mapeo, no int_clientes_mapeo_limpio directo: la
+-- limpieza de clientes ya está validada y stg_clientes_mapeo repunta a
+-- int_clientes_mapeo_limpio desde la Fase 2 (ya no es la fuente legacy).
+-- Se mantiene el join a través del wrapper porque ahí ya están hechos
+-- los casts a varchar(50) que este join necesita.
 --
 -- fct_ventas_36m (Canibalización) ya consume este modelo (migrado --
 -- antes tenía su propia copia inline de estas mismas reglas). Efecto de

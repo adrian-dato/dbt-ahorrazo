@@ -43,9 +43,13 @@
 --     nombre de persona) se EXCLUYEN -- el legacy los dejaba adentro
 --     usando el nombre como si fuera un id, mezclando clientes distintos
 --     que comparten el mismo nombre/placeholder.
--- Por esto NO se espera que analyses/validar_clientes_mapeo_limpio.sql
--- dé cero diferencias -- ver ese archivo para qué diferencias son
--- esperadas (mejoras) vs. cuáles habría que investigar.
+-- Por esto NO se esperaba cero diferencias contra dbo.clientes_mapeo al
+-- validar (analysis ya eliminado, cumplió su función): conteo_solo_nuevo=0
+-- (sin contar los ~5985 clientes nuevos acumulados por el atraso del
+-- legacy), conteo_solo_legacy=267 (los no identificables que acá se
+-- excluyen a propósito) y conteo_valor_distinto=16 (símbolos sueltos o
+-- separadores no estándar que acá quedan bien limpios) -- confirmado
+-- con el usuario, ver commit "Fase 2 confirmada".
 --
 -- Nota: todavía NO reemplaza a stg_clientes_mapeo -- corre en paralelo
 -- al proceso legacy hasta validar que las diferencias que aparecen son
