@@ -1,43 +1,6 @@
 version: 2
 
 models:
-  - name: int_mayoristas_umbral_ticket_grande
-    description: >
-      Reemplaza calcular_umbral_ticket_grande(). Umbral único (Q3 + 1.5*IQR)
-      sobre unidades por ticket de todo el universo de 12 meses -- 1 fila,
-      reutilizado en los 4 ámbitos de int_mayoristas_metricas_cliente.
-
-  - name: int_mayoristas_metricas_cliente
-    description: >
-      Reemplaza calcular_metricas(). Grano (ambito, cliente_id_limpio),
-      ambito = GLOBAL o sucursal_codigo (SL/R1/R2).
-    columns:
-      - name: ambito
-        tests:
-          - not_null
-      - name: cliente_id_limpio
-        tests:
-          - not_null
-
-  - name: dim_clientes_mayoristas
-    description: >
-      Reemplaza clasificar_nivel(). Reemplaza dbo.clientes_mayoristas_v2.
-      Puntaje 0-3 y nivel_mayorista (Alto/Medio/Potencial/Minorista) con
-      umbrales Q3 dinámicos por ámbito.
-    columns:
-      - name: ambito
-        tests:
-          - not_null
-      - name: cliente_id_limpio
-        tests:
-          - not_null
-      - name: nivel_mayorista
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: ['Alto', 'Medio', 'Potencial', 'Minorista']
-
   - name: int_mayoristas_v3_tickets_por_unidad
     description: >
       Grano cliente_id_limpio x ticket_id x unidad_medida -- agregación
@@ -59,11 +22,38 @@ models:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
 
+  - name: int_mayoristas_v3_umbral_ticket
+    description: >
+      Los cortes de "factura grande" por unidad de medida -- 4 filas con
+      Q1, Q3, el IQR crudo, el IQR efectivo y el umbral. El cálculo del
+      percentil vivía dentro de mayoristas_v3_tickets_unidad y la obligaba
+      a materializarse, duplicando 7,4 millones de filas; separado acá,
+      esa tabla puede ser una vista.
+    columns:
+      - name: unidad_medida
+        tests:
+          - not_null
+          - unique
+      - name: q1_unidades
+        tests:
+          - not_null
+      - name: q3_unidades
+        tests:
+          - not_null
+      - name: iqr_aplicado
+        description: >
+          El IQR que entra en la cuenta: umbral_ticket_grande =
+          q3_unidades + 3 * iqr_aplicado. Igual al IQR crudo salvo cuando
+          ese da 0 (Q1 = Q3), y ahí vale Q3.
+        tests:
+          - not_null
+
   - name: mayoristas_v3_tickets_unidad
     description: >
-      Metodología v3 (todavía prototipo, no reemplaza a
-      int_mayoristas_umbral_ticket_grande/int_mayoristas_metricas_cliente
-      -- ver PENDIENTES.md). Grano cliente_id_limpio x ticket_id x
+      Metodología v3, fuente de producción desde el cutover. VISTA sobre
+      int_mayoristas_v3_tickets_por_unidad con los cortes pegados al lado
+      -- no se materializa porque sería la misma tabla dos veces. Grano
+      cliente_id_limpio x ticket_id x
       unidad_medida -- responde "¿por qué ESTA factura contó como ticket
       grande?" a nivel de factura individual, no un promedio mensual.
       umbral_ticket_grande = Q3 + 3xIQR calculado POR SEPARADO en cada
@@ -88,6 +78,26 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: q1_unidades
+        description: >
+          Percentil 25 de unidades por ticket en esa unidad_medida. Mismo
+          valor en todas las filas de la unidad. Se expone para poder
+          reproducir el corte a mano -- umbral_ticket_grande sale de acá.
+        tests:
+          - not_null
+      - name: q3_unidades
+        description: >
+          Percentil 75 de unidades por ticket en esa unidad_medida.
+        tests:
+          - not_null
+      - name: iqr_aplicado
+        description: >
+          El IQR que entra en umbral_ticket_grande. Es q3 - q1, salvo
+          cuando eso da 0 (Q1 = Q3) y ahí vale q3 -- con IQR 0 la fórmula
+          colapsaría a Q3 y el corte dejaría de separar. Ver el CTE
+          umbrales del modelo.
+        tests:
+          - not_null
       - name: ticket_grande
         tests:
           - not_null
@@ -134,14 +144,12 @@ models:
   - name: mayoristas_v3_resumen
     description: >
       Metodología v3 -- tabla final de clasificación, grano
-      cliente_id_limpio. Puntaje 0-3 y nivel_mayorista, análogo a
-      dim_clientes_mayoristas (v2) pero con C1/C2 corregidos por
-      unidad_medida (ver mayoristas_v3_metricas_unidad). C3 es GLOBAL
+      cliente_id_limpio. Puntaje 0-3 y nivel_mayorista, con C1/C2 por
+      unidad de medida (ver mayoristas_v3_metricas_unidad). C3 es GLOBAL
       (todas las unidades de medida, no solo las 4 de C1/C2) y usa venta
       PROMEDIO por ticket, no la suma total del período -- ver
-      comentario del modelo. TODAVÍA PROTOTIPO, no reemplaza a
-      dim_clientes_mayoristas como fuente de producción -- ver
-      PENDIENTES.md.
+      comentario del modelo. Es la única clasificación mayorista del
+      proyecto: la v2 se eliminó al hacerse el cutover.
     columns:
       - name: cliente_id_limpio
         tests:
@@ -163,7 +171,10 @@ models:
       join saca primero el DISTINCT por unidad_medida de cada tabla por
       separado antes de unirlas -- unir las dos tablas grandes
       directamente por unidad_medida (solo 4 valores) arma un producto
-      cartesiano completo, ver comentario del modelo.
+      cartesiano completo, ver comentario del modelo. Incluye Q1, Q3 e IQR
+      de unidades por ticket además del corte que sale de ellos: sin los
+      números de origen el corte no se puede reproducir con otra
+      herramienta ni explicar en el tablero.
     columns:
       - name: unidad_medida
         tests:
@@ -172,3 +183,55 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: q1_unidades
+        tests:
+          - not_null
+      - name: q3_unidades
+        tests:
+          - not_null
+      - name: iqr_unidades
+        description: >
+          q3_unidades - q1_unidades, el IQR crudo. Se guarda para poder
+          ver cuándo dio 0 y entró el fallback.
+        tests:
+          - not_null
+      - name: iqr_aplicado
+        description: >
+          El IQR que entra en la cuenta: umbral_ticket_grande =
+          q3_unidades + 3 * iqr_aplicado. El multiplicador es 3, no el 1,5
+          estándar de outlier, por decisión explícita del negocio. Vale lo
+          mismo que iqr_unidades salvo cuando ese da 0.
+        tests:
+          - not_null
+
+  - name: mayoristas_v3_frecuencia_compra
+    description: >
+      Cada cuánto viene cada cliente -- segunda dimensión de
+      segmentación, cruzable con nivel_mayorista. Grano
+      cliente_id_limpio, una fila por cliente de mayoristas_v3_resumen
+      (LEFT JOIN, así ninguno desaparece). Lee de
+      mayoristas_v3_tickets_unidad y no de int_ventas_12m: la brecha
+      medida es de 2.477 tickets sobre 4.681.477 (0,05%), tickets
+      compuestos enteramente por Blis/Metros/Ramo, y para clasificar
+      cada cuánto viene un cliente una visita es una visita sin
+      importar la unidad de medida. dias_entre_visitas =
+      (última compra - primera compra) / (visitas - 1). El "menos uno"
+      es el problema de los postes del alambrado: con 25 visitas hay 24
+      intervalos. Da EXACTAMENTE lo mismo que promediar los intervalos
+      consecutivos uno por uno -- la suma telescopa y todo lo del medio
+      se cancela -- pero sin LAG y sin ordenar 8M de filas particionadas
+      por cliente. Limitación conocida: un promedio suaviza las ráfagas;
+      distinguir ráfaga de hábito sería la mediana de los intervalos, y
+      eso sí necesita LAG. Los cortes viven en dbt_project.yml y
+      son conceptos del negocio (semana/quincena/mes), no percentiles.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique
+      - name: frecuencia_compra
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Semanal', 'Quincenal', 'Mensual', 'Esporádico', 'Visita única', 'Sin datos']

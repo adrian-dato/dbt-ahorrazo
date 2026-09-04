@@ -18,11 +18,9 @@
 -- -- una sola fuente de verdad para "unidades/venta por ticket y si es
 -- grande", no dos que puedan desalinearse.
 --
--- IMPORTANTE -- todavía prototipo, no reemplaza a
--- int_mayoristas_umbral_ticket_grande/int_mayoristas_metricas_cliente
--- (v2, con el bug de unidad_medida mezclada sin corregir, ver
--- PENDIENTES.md) -- esos siguen siendo la fuente de producción hasta
--- que v3 se valide y se decida el cutover.
+-- Fuente de producción desde el cutover. Los modelos de la v2 que
+-- calculaban un umbral único mezclando todas las unidades de medida ya
+-- no existen en el proyecto.
 --
 -- Por qué solo Unid/KILOS/LITROS/Pack (no Blis/Metros/Ramo): las otras
 -- 3 no tienen volumen ni variancia real -- la gran mayoría de esos
@@ -32,11 +30,12 @@
 -- notebook.
 --
 -- umbral_ticket_grande = Q3 + 3xIQR de unidades por ticket, calculado
--- POR SEPARADO en cada unidad_medida -- a diferencia de
--- int_mayoristas_umbral_ticket_grande (v2), que calcula un único umbral
+-- POR SEPARADO en cada unidad_medida (con el IQR efectivo del CTE
+-- umbrales -- ver ahí el caso Q1 = Q3) -- a diferencia de
+-- la v2, que calculaba un único umbral
 -- global mezclando todas las unidades, este es el fix central de v3. El
--- multiplicador es 3 (no el 1.5 que usa v2) -- decisión explícita del
--- usuario, ver PENDIENTES.md.
+-- multiplicador es 3 y no el 1,5 estándar de outlier, por decisión
+-- explícita del negocio.
 --
 -- Q1/Q3 se calculan en ramas separadas por unidad_medida (UNION ALL),
 -- no con PERCENTILE_CONT(...) OVER (PARTITION BY unidad_medida): la
@@ -57,21 +56,15 @@
 -- partición" -- no reintroduce la columna despareja. El DISTINCT
 -- colapsa las filas repetidas (mismo valor en cada fila de la rama).
 
-{{ config(materialized='table') }}
+{{ config(materialized='view') }}
 
-{% set unidades_relevantes = ['Unid', 'KILOS', 'LITROS', 'Pack'] %}
-
-with umbrales as (
-    {% for u in unidades_relevantes %}
-    select distinct
-        '{{ u }}' as unidad_medida,
-        percentile_cont(0.25) within group (order by unidades) over () as q1,
-        percentile_cont(0.75) within group (order by unidades) over () as q3
-    from {{ ref('int_mayoristas_v3_tickets_por_unidad') }}
-    where unidad_medida = '{{ u }}'
-    {% if not loop.last %}union all{% endif %}
-    {% endfor %}
-)
+-- VISTA, no tabla. Es int_mayoristas_v3_tickets_por_unidad con los cortes
+-- pegados al lado: 4 columnas constantes por unidad de medida y un CASE.
+-- Materializarla guardaba los mismos 7,4 millones de filas dos veces, y
+-- la unica razon para hacerlo era que el calculo del percentil vivia aca
+-- adentro. Ese calculo se mudo a int_mayoristas_v3_umbral_ticket, que
+-- devuelve 4 filas, asi que el join es contra una tabla minuscula y la
+-- vista se resuelve barata.
 
 select
     t.cliente_id_limpio,
@@ -80,11 +73,18 @@ select
     t.fecha_venta,
     t.unidades,
     t.venta_gs,
-    u.q3 + 3 * (u.q3 - u.q1) as umbral_ticket_grande,
+    -- Q1, Q3 y el IQR que realmente se uso viajan con cada fila. Sin los
+    -- numeros de origen nadie puede reproducir el corte con otra
+    -- herramienta, y sin iqr_aplicado quien rehaga la cuenta con q1 y q3
+    -- obtiene 1 para Pack en vez de 4 y concluye que el modelo esta mal.
+    u.q1_unidades,
+    u.q3_unidades,
+    u.iqr_aplicado,
+    u.umbral_ticket_grande,
     case
-        when t.unidades > u.q3 + 3 * (u.q3 - u.q1) then 1
+        when t.unidades > u.umbral_ticket_grande then 1
         else 0
     end as ticket_grande
 from {{ ref('int_mayoristas_v3_tickets_por_unidad') }} t
-inner join umbrales u
+inner join {{ ref('int_mayoristas_v3_umbral_ticket') }} u
     on t.unidad_medida = u.unidad_medida

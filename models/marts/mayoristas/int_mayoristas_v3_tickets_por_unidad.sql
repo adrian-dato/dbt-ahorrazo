@@ -16,7 +16,7 @@ select
     min(v.fecha_venta) as fecha_venta,  -- 1 sola fecha real por ticket, min() solo por sintaxis de group by
     sum(v.unidades)    as unidades,
     sum(v.venta_gs)    as venta_gs
-from {{ ref('int_ventas_12m') }} v
+from {{ ref('int_ventas_12m_tabla') }} v
 inner join {{ ref('int_productos_limpio') }} p
     on v.producto_id = p.producto_id
 where p.unidad_medida in ('Unid', 'KILOS', 'LITROS', 'Pack')

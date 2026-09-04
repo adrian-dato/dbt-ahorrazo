@@ -22,7 +22,7 @@
 --     qué tan alto tiene que ser ESE cliente respecto al resto.
 --
 -- C2 tiene un piso mínimo (var mayoristas_pct_grandes_minimo, mismo
--- valor 0.40 que ya usa dim_clientes_mayoristas en v2) -- nunca baja de
+-- valor 0.40 que venía de la v2) -- nunca baja de
 -- ese piso aunque el percentil 75 real del universo dé menos.
 --
 -- Q3 de upt/pct_tickets_grandes se calcula en ramas separadas por

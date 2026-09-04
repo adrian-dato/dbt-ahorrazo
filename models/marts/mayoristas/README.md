@@ -1,114 +1,105 @@
 # marts/mayoristas/
 
-Reemplaza `analisis_mayoristas_v2.ipynb` de `analisis_mayorista` -- el
-notebook v2 (reglas Q3 + 1.5×IQR), la metodología ya validada como
-canónica frente al v1 (score ML). Lógica leída del notebook real, no
-adivinada.
+Clasifica a cada cliente en un nivel de mayorista, de Alto a Minorista, según
+cuánto se parece su forma de comprar a la de alguien que revende.
 
-## Estado
+## La metodología
 
-- `int_mayoristas_umbral_ticket_grande`, `int_mayoristas_metricas_cliente`,
-  `dim_clientes_mayoristas` -- escritos. Sin correr todavía contra la
-  base real.
-- `int_ventas_filtradas_12m` (nombrado así en el plan original) ya
-  estaba resuelto de antes: es `int_ventas_12m` en `intermediate/`,
-  compartido con Top 300 -- no se duplicó acá.
+Tres criterios, un punto cada uno, sobre una ventana móvil de doce meses
+cerrados. La suma da el nivel: 3 es Alto, 2 Medio, 1 Potencial y 0 Minorista.
 
-## Desvío respecto al plan original
+**C1, volumen por visita.** Promedio de unidades por factura, calculado por
+separado en cada unidad de medida. Cumple si está en el percentil 75 o más
+comparado con el resto de los clientes que compran esa misma unidad. Alcanza con
+cumplirlo en una.
 
-El plan original (`PLAN_MAESTRO_REINGENIERIA.md`, y el propio
-`PLAN_REINGENIERIA.md` de `analisis_mayorista`) preveía que
-`clasificar_nivel()` se quedara en Python ("scoring sobre una tabla ya
-chica"). Acá se portó completo a SQL (`dim_clientes_mayoristas.sql`,
-vía `PERCENTILE_CONT` para los umbrales Q3 dinámicos) porque la lógica
--- comparar cada métrica contra un umbral y sumar puntos -- se expresa
-igual de bien en SQL, sin necesitar un paso Python aparte. No cambia
-ningún resultado (mismo cálculo, mismos umbrales), solo dónde corre --
-push-down completo a SQL Server, coherente con el principio rector del
-plan maestro ("el cómputo pesado vive en SQL Server, no en Python").
+**C2, repetición del volumen.** Primero se define a partir de cuántas unidades
+una factura es grande, con `Q3 + 3 × IQR` sobre todas las facturas de esa unidad
+de medida. Después se mira qué proporción de las facturas del cliente superaron
+ese corte. Cumple si al menos el 40% lo superó, o el percentil 75 del resto de
+los clientes si ese fuera más alto. También basta con cumplirlo en una unidad.
 
-v1 (score ML + KMeans/IsolationForest) se archiva como job separado en
-`analisis_mayorista`, no se migra a dbt.
+En Pack, Q1 y Q3 valen 1: tres de cada cuatro facturas llevan un solo pack. Con
+IQR cero la fórmula se reduce a Q3 y el corte deja de separar, así que en ese caso
+se usa Q3 en lugar del IQR y el corte queda en 4. El test
+`assert_unidades_con_variancia` informa en cada corrida qué unidad de medida está
+en esa situación.
 
-## v3 -- metodología corregida, en curso de portarse a dbt
+**C3, valor por visita.** Venta promedio por factura, no la suma del período:
+sumar mezclaría a quien gasta mucho por visita con quien viene muchas veces. Es
+global, entran todas las unidades de medida, porque acá todo está en guaraníes.
+Cumple si está en el percentil 75 del resto de los clientes.
 
-v2 tiene un bug real sin corregir: `upt`/`pct_tickets_grandes` mezclan
-`unidades` de TODAS las unidades de medida (kilos, litros, unidades
-sueltas, packs) en una sola suma sin sentido (ej. 130 kilos + 697
-unidades = "827 unidades"). v3 corrige esto calculando cada criterio por
-separado por `unidad_medida` -- desarrollado y validado en
-`analisis_mayorista/analisis_mayoristas_v3.ipynb`, todavía **prototipo**
-(no reemplaza a v2 como fuente de producción).
+C1 y C2 se calculan únicamente sobre Unid, KILOS, LITROS y Pack. Blis, Metros y
+Ramo quedan afuera porque casi todas sus facturas llevan una sola pieza y no hay
+corte que separe una compra grande de una normal. En C3 entran las siete.
 
-Cadena completa, ya portada a dbt (antes vivía entera en el notebook,
-escribiendo a mano por pandas):
+Que cada unidad de medida se mida contra su propia vara es el centro de todo. Un
+cliente que se lleva 130 kilos de carne y 697 unidades sueltas en la misma
+factura no compró 827 de nada.
+
+## La cadena de modelos
 
 ```
-int_mayoristas_v3_tickets_por_unidad     (cliente x ticket x unidad_medida -- agregación base)
-    -> mayoristas_v3_tickets_unidad      (cliente x ticket x unidad_medida -- C1/C2)
-        -> mayoristas_v3_metricas_unidad (cliente x unidad_medida -- umbrales + c1/c2)
-            -> mayoristas_v3_resumen     (cliente -- puntaje/nivel final, TABLA DE PRODUCCIÓN de v3)
-            -> mayoristas_v3_umbrales    (1 fila x unidad_medida -- referencia de metodología)
+int_ventas_12m_tabla
+  → int_mayoristas_v3_tickets_por_unidad   tabla    cliente × factura × unidad
+      → int_mayoristas_v3_umbral_ticket    tabla    4 filas: Q1, Q3, IQR y el corte
+          → mayoristas_v3_tickets_unidad   vista    lo anterior con los cortes al lado
+              → mayoristas_v3_metricas_unidad   cliente × unidad, con C1 y C2
+                  → mayoristas_v3_resumen        cliente, con el puntaje y el nivel
+                  → mayoristas_v3_umbrales       referencia de metodología
+              → mayoristas_v3_frecuencia_compra  cliente, cada cuánto viene
 ```
 
-`int_mayoristas_v3_tickets_por_unidad` se separó de
-`mayoristas_v3_tickets_unidad` (donde antes vivía como CTE) después de
-que el primer build real colgara la instancia: el cálculo de Q1/Q3 por
-`unidad_medida` usaba `PERCENTILE_CONT(...) OVER (PARTITION BY
-unidad_medida)`, y con `Unid`+`KILOS` concentrando >99% de los tickets,
-esa partición fuerza al motor a repartir el trabajo paralelo de forma
-muy despareja (confirmado con `sys.dm_os_tasks`: 3 threads de 40
-cargando casi todo, el resto ocioso). Se reemplazó por 4 ramas
-independientes (`UNION ALL`, una por unidad_medida) con exactamente la
-misma fórmula sobre las mismas filas -- resultado idéntico, pero cada
-rama se paraleliza libre por su cuenta en vez de competir por el mismo
-carril. Separar la agregación base en su propio modelo evita, además,
-que esas 4 ramas más el join final recalculen el `GROUP BY` sobre
-`int_ventas_12m` cinco veces.
+`mayoristas_v3_resumen` lee además `int_ventas_12m_tabla` directo para C3, que
+toma todas las unidades de medida y no solo las cuatro con C1 y C2.
 
-La corrida real posterior encontró 2 problemas más, ya corregidos:
+### Por qué la cadena está partida así
 
-1. **Error de sintaxis** (`PERCENTILE_CONT` requiere `OVER()` en T-SQL
-   siempre, a diferencia de Postgres/Oracle donde puede ser agregado
-   simple con `GROUP BY` -- falla con el error 10753 sin `OVER`). Se
-   agregó `OVER()` vacío (sin `PARTITION BY`) a cada rama del `UNION
-   ALL`, más `DISTINCT` para colapsar las filas repetidas -- no
-   reintroduce el problema de skew porque cada rama ya viene filtrada a
-   una sola unidad_medida.
-2. **`mayoristas_v3_umbrales` armaba un producto cartesiano**: unía
-   `mayoristas_v3_tickets_unidad` (grano ticket, millones de filas) con
-   `mayoristas_v3_metricas_unidad` (grano cliente, hasta ~1,6M filas)
-   directo por `unidad_medida` (solo 4 valores posibles) -- eso arma el
-   cruce completo de cada lado antes de que el `GROUP BY` + `MAX()` lo
-   colapse de vuelta a 1 fila por unidad, y volvió a colgar la base.
-   Corregido sacando primero el `DISTINCT` de cada tabla por separado
-   (cada una ya trae un solo valor por unidad_medida) y uniendo recién
-   esos dos resultados de 4 filas.
+La cadena está separada en varios modelos para no recorrer las tablas grandes más
+veces de las necesarias. Dos de estas decisiones salieron de corridas que dejaron
+la base sin responder.
 
-**Estado al cierre de esta sesión**: con los 3 fixes aplicados,
-`int_mayoristas_v3_tickets_por_unidad` → `mayoristas_v3_tickets_unidad`
-→ `mayoristas_v3_metricas_unidad` → `mayoristas_v3_resumen` corrieron
-bien contra la base real (confirmado -- Power BI ya consulta
-`mayoristas_v3_resumen` sin problema). `mayoristas_v3_umbrales`, con el
-fix del cartesiano aplicado, **todavía no se confirmó que haya
-terminado de correr** -- quedó pendiente verificar.
+**El cálculo de los cuartiles está en su propio modelo.** En SQL Server una
+expresión `WITH` se vuelve a resolver cada vez que se la referencia. Dentro de
+`mayoristas_v3_tickets_unidad` se la referenciaba cinco veces, y la agregación de
+62 millones de líneas se ejecutaba otras tantas. Con el cálculo en
+`int_mayoristas_v3_umbral_ticket`, que devuelve cuatro filas, ese modelo puede ser
+una vista.
 
-También durante esta sesión se confirmó que `marts_mayoristas.mayoristas_v3_detalle_unidad`
-(774.619 filas) es una tabla física que sigue existiendo en la base,
-escrita directo por `analisis_mayoristas_v3.ipynb` vía pandas ANTES del
-port a dbt -- dbt no la toca ni la actualiza, quedó congelada. Sus 9
-columnas son idénticas, mismo nombre y orden, a las de
-`mayoristas_v3_metricas_unidad`: es su predecesora directa. Un tablero
-de Power BI viejo la sigue consultando directo (`Item="mayoristas_v3_detalle_unidad"`
-en Power Query) -- hay que repuntarlo a `mayoristas_v3_metricas_unidad`
-antes de borrar la tabla vieja.
+**Q1 y Q3 salen de cuatro consultas separadas**, una por unidad de medida, en
+lugar de una ventana particionada por esa columna. Unid y KILOS concentran más
+del 99% de las facturas, así que esa partición reparte el trabajo paralelo de
+forma muy desigual.
 
-`mayoristas_v3_resumen` lee además `int_ventas_12m` directo (no pasa por
-`mayoristas_v3_tickets_unidad`) para C3, que es global -- entran todas
-las unidades de medida, no solo las 4 con C1/C2.
+**`mayoristas_v3_umbrales` toma los cortes de los modelos chicos.** Unir las dos
+tablas grandes por `unidad_medida`, que tiene cuatro valores posibles, genera el
+producto cartesiano completo antes de que el `GROUP BY` lo reduzca.
 
-El notebook (`analisis_mayorista/analisis_mayoristas_v3.ipynb`) ya no
-escribe ninguna de estas tablas -- dbt es la fuente. El notebook queda
-para la parte exploratoria (boxplots/asimetría/curtosis sobre la mezcla
-de unidades, que motivó todo este rediseño) y para leer estas tablas y
-validar casos puntuales.
+## Orquestación
+
+El DAG mensual corre `dbt build --select +tag:mayoristas` el día 1 a las 02:00,
+en `orquestacion_ahorrazo`. El tag está puesto a nivel carpeta en
+`dbt_project.yml`, así que cualquier modelo nuevo que se agregue acá entra solo.
+
+## Lo que queda de la versión anterior
+
+La v2 se eliminó del repo cuando se hizo el cutover. Calculaba C1 y C2 sumando
+las unidades de todas las unidades de medida en un solo número, que es el error
+que la v3 corrige.
+
+Quedaron objetos huérfanos en la base que dbt ya no administra y que se dan de
+baja con `analyses/limpiar_objetos_mayoristas_v2.sql`. Uno merece atención:
+`marts_mayoristas.mayoristas_v3_detalle_unidad`, de 774.619 filas, la escribía el
+notebook por pandas antes del port a dbt. Tiene las mismas nueve columnas en el
+mismo orden que `mayoristas_v3_metricas_unidad`, que es su reemplazo. Un tablero
+de Power BI viejo la consulta directo, con `Item="mayoristas_v3_detalle_unidad"`
+en Power Query, así que hay que repuntarlo antes de borrarla.
+
+## El notebook
+
+`analisis_mayorista/analisis_mayoristas_v3.ipynb` ya no escribe ninguna de estas
+tablas. Queda para la parte exploratoria que motivó el rediseño, los boxplots y
+las medidas de forma sobre la mezcla de unidades, y para leer estas tablas y
+revisar casos puntuales. La validación de resultados vive aparte, en
+`validacion_mayoristas_v3.ipynb`.

@@ -21,21 +21,22 @@
 
 {{ config(materialized='table') }}
 
-with umbral_ticket as (
-    select distinct unidad_medida, umbral_ticket_grande
-    from {{ ref('mayoristas_v3_tickets_unidad') }}
-),
-
-umbral_cliente as (
-    select distinct unidad_medida, umbral_upt, umbral_pct
-    from {{ ref('mayoristas_v3_metricas_unidad') }}
-)
+-- Los cortes de ticket salen de int_mayoristas_v3_umbral_ticket, que ya
+-- son 4 filas -- antes se sacaban con un DISTINCT sobre los 7,4 millones
+-- de mayoristas_v3_tickets_unidad solo para quedarse con 4.
 
 select
     t.unidad_medida,
+    t.q1_unidades,
+    t.q3_unidades,
+    t.iqr_unidades,
+    t.iqr_aplicado,
     t.umbral_ticket_grande,
     m.umbral_upt,
     m.umbral_pct
-from umbral_ticket t
-inner join umbral_cliente m
+from {{ ref('int_mayoristas_v3_umbral_ticket') }} t
+inner join (
+    select distinct unidad_medida, umbral_upt, umbral_pct
+    from {{ ref('mayoristas_v3_metricas_unidad') }}
+) m
     on t.unidad_medida = m.unidad_medida

@@ -2,10 +2,9 @@
 -- cliente_id_limpio -- puntaje 0-3 y nivel_mayorista. Reemplaza
 -- "resultado" del notebook (analisis_mayoristas_v3.ipynb, sección 4) --
 -- el notebook deja de escribir esto a mano por pandas, esto YA es la
--- fuente. Análogo a dim_clientes_mayoristas (v2), pero con C1/C2
--- corregidos por unidad_medida -- TODAVÍA PROTOTIPO, no reemplaza a
--- dim_clientes_mayoristas como fuente de producción hasta que v3 se
--- valide y se decida el cutover (ver PENDIENTES.md).
+-- fuente. Es la ÚNICA clasificación mayorista del proyecto: la v2
+-- (dim_clientes_mayoristas, que calculaba C1/C2 mezclando todas las
+-- unidades de medida en un solo upt) se eliminó al hacerse el cutover.
 --
 -- C1/C2: "cumple si cumple en CUALQUIER unidad de medida" -- max()
 -- sobre mayoristas_v3_metricas_unidad (0/1, max = OR).
@@ -36,7 +35,7 @@ venta_por_ticket as (
         cliente_id_limpio,
         ticket_id,
         sum(venta_gs) as venta_gs
-    from {{ ref('int_ventas_12m') }}
+    from {{ ref('int_ventas_12m_tabla') }}
     group by cliente_id_limpio, ticket_id
 ),
 
