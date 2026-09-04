@@ -1,131 +1,184 @@
-# Comandos — dbt_ahorrazo
+# Comandos de dbt_ahorrazo
 
-Referencia rápida para correr dbt contra la base real desde una compu
-local (venv + `.env` + `profiles.yml` en la raíz del repo, ver
-`README.md` → "Setup local" para el detalle de cómo quedó armado).
+Referencia para correr dbt contra la base real desde una compu local. El armado
+del entorno está en [`README.md`](README.md).
 
-## 0. Activar el entorno (una vez por sesión nueva de terminal)
+## Activar el entorno
+
+Una vez por sesión de terminal:
 
 ```bash
 cd dbt_ahorrazo
 source activar.sh
 ```
 
-Hace lo mismo que estos 4 pasos (por si `activar.sh` no está disponible
-o hay que adaptarlo a otro entorno, ej. WSL más adelante):
+`activar.sh` hace estos tres pasos:
 
 ```bash
-source .venv/Scripts/activate    # en WSL/Linux: .venv/bin/activate
+source .venv/Scripts/activate    # en WSL o Linux, .venv/bin/activate
 set -a && source .env && set +a
 export DBT_PROFILES_DIR="$(pwd)"
 ```
 
-**Importante**: tiene que ser `source activar.sh`, no `./activar.sh` — si
-se corre como script aparte, las variables quedan en una subshell
-descartable y no le llegan a los comandos `dbt` siguientes.
+Tiene que ser `source activar.sh` y no `./activar.sh`. Corrido como script, las
+variables quedan en una subshell que se descarta al terminar y los comandos `dbt`
+siguientes no las ven.
 
-## 1. Comandos básicos
+## Los comandos base
 
 | Comando | Qué hace |
 |---|---|
-| `dbt debug` | Prueba la conexión a la base. Primer comando para confirmar que todo está bien configurado. |
-| `dbt build` | Corre TODO (seeds + models + tests) en orden de dependencias. Sobre una fact de 238M+ filas, correrlo sin acotar puede tardar bastante — preferir `--select` casi siempre. |
-| `dbt run` | Como `dbt build`, pero solo modelos (sin tests). |
-| `dbt test` | Solo corre tests, sobre modelos ya construidos. |
-| `dbt compile` | Resuelve el Jinja/`ref()`/`source()` a SQL plano, sin ejecutar nada contra la base. El resultado queda en `target/compiled/`. |
-| `dbt show` | Compila Y ejecuta, mostrando el resultado en la terminal (no persiste nada). Sirve tanto para modelos como para `analyses/`. |
-| `dbt docs generate` + `dbt docs serve` | Genera y sirve el catálogo/lineage navegable del proyecto (útil más adelante, no urgente ahora). |
+| `dbt debug` | Prueba la conexión. El primero a correr cuando algo no funciona. |
+| `dbt build` | Seeds, modelos y tests, en orden de dependencias. Sin `--select` recorre el proyecto entero sobre una fact de más de 238 millones de filas, así que conviene acotarlo casi siempre. |
+| `dbt run` | Igual que `dbt build` pero sin los tests. |
+| `dbt test` | Solo los tests, sobre modelos ya construidos. |
+| `dbt compile` | Resuelve el Jinja a SQL plano sin ejecutar nada. Queda en `target/compiled/`. |
+| `dbt show` | Compila y ejecuta, mostrando el resultado en la terminal sin persistir nada. Funciona con modelos y con analyses. |
+| `dbt docs generate` + `dbt docs serve` | Catálogo y lineage navegables. |
 
-## 2. Selectors — cómo elegir qué correr
-
-Todos estos comandos aceptan `--select` (o `-s`) para acotar el alcance.
-Sin `--select`, corren TODO el proyecto.
+## Cómo acotar qué se corre
 
 ```bash
 # Un modelo puntual
-dbt build --select stg_ventas
+dbt build --select mayoristas_v3_resumen
 
-# Varios modelos a la vez
-dbt build --select staging fct_ventas_36m
+# Un modelo con todo lo que necesita para construirse
+dbt build --select +mayoristas_v3_resumen
 
-# Toda una carpeta/capa (funciona porque el nombre de carpeta es parte
-# del path del modelo)
+# Un modelo con todo lo que depende de él
+dbt build --select mayoristas_v3_resumen+
+
+# Todo el linaje, hacia arriba y hacia abajo
+dbt build --select +mayoristas_v3_resumen+
+
+# Una carpeta entera
 dbt build --select staging
 dbt build --select marts.canibalizacion
 
-# Un modelo + todo lo que necesita para construirse (upstream, el "+"
-# va ANTES del nombre)
-dbt build --select +fct_ventas_36m
+# Por tag de proyecto, que es lo que usan los DAGs
+dbt build --select +tag:mayoristas
+dbt build --select +tag:top_300
+dbt build --select +tag:canibalizacion
 
-# Un modelo + todo lo que depende de él (downstream, el "+" va DESPUÉS)
-dbt build --select fct_ventas_36m+
-
-# Todo el linaje completo (arriba y abajo)
-dbt build --select +fct_ventas_36m+
-
-# Por tag de proyecto (canibalizacion/top_300/mayoristas -- ya
-# configurado en dbt_project.yml para todo lo que esté bajo marts/)
-dbt build --select tag:canibalizacion
-
-# Excluir algo puntual de una selección más amplia
+# Excluir algo de una selección más amplia
 dbt build --select staging --exclude stg_clientes
 ```
 
-## 3. Modelos incrementales — cuándo usar `--full-refresh`
+Los tags están declarados a nivel carpeta en `dbt_project.yml`, así que un modelo
+nuevo en `marts/<proyecto>/` queda incluido sin tocar nada más. Es la forma
+preferible de seleccionar un proyecto completo: apuntar a un modelo puntual deja
+afuera cualquier rama que no sea ancestro de ese modelo.
 
-`fct_ventas_36m`, `int_clientes_mapeo_limpio` (y los que se agreguen
-después) son incrementales: por default solo reprocesan el delta
-reciente. Hay que forzar reconstrucción completa con `--full-refresh`:
+## Reconstruir Mayoristas
 
-- La primera vez que se corre un modelo incremental nuevo (si la tabla
-  todavía no existe, dbt hace full build automáticamente -- no hace
-  falta el flag la primera vez).
-- Cuando cambia el SQL de un modelo incremental ya construido -- dbt
-  NO reconstruye el histórico solo, hay que pedirlo explícito.
+La cadena entera, que es lo que corre el DAG mensual:
+
+```bash
+dbt test --select assert_ventas_actualizada_mes_cerrado
+dbt build --select +tag:mayoristas
+```
+
+El test va primero y es una puerta, no un trámite. Compara el máximo de
+`Ventas_Ahorrazo` contra el último día del mes cerrado. Si avisa, la fuente
+todavía no terminó de cargar el mes y un build recalcularía la clasificación
+sobre un período incompleto: todos los cortes se moverían por un mes a medio
+cargar y no por el negocio. Está en `severity: warn`, así que no frena nada por
+sí solo, hay que mirarlo.
+
+Cuando un modelo cambia de tabla a vista o al revés, conviene borrar el objeto
+anterior antes del build. dbt no siempre hace esa conversión limpia:
+
+```sql
+drop table if exists marts_mayoristas.mayoristas_v3_tickets_unidad;
+```
+
+## Modelos incrementales
+
+`int_clientes_mapeo_limpio` y `fct_ventas_36m` solo reprocesan las filas
+recientes en una corrida normal. Hay que forzar la reconstrucción completa en dos
+situaciones:
+
+- La primera vez, si la tabla todavía no existe. Ahí dbt lo hace solo, sin flag.
+- Cuando cambia el SQL del modelo. dbt no reconstruye el histórico por su cuenta
+  y no avisa: hay que pedirlo.
 
 ```bash
 dbt build --select fct_ventas_36m --full-refresh
 ```
 
-## 4. Analyses (`analyses/*.sql`) — no son modelos, no corren con `dbt build`
+`int_clientes_mapeo_limpio` tarda entre 47 y 67 minutos en `--full-refresh`. Es
+el modelo más lento del proyecto.
 
-Confirmado que `dbt show` funciona directo sobre analyses, igual que
-sobre modelos (no hace falta copiar/pegar el SQL compilado a mano):
+## Snapshots
 
 ```bash
-dbt show --select perfilar_calidad_cliente_id --limit 20
-dbt show --select validar_clientes_mapeo_limpio
+dbt snapshot --select dim_cliente_tipo_migracion_snapshot
 ```
 
-Para consultas ad-hoc de una sola vez que no ameritan un archivo nuevo
-en `analyses/`, `--inline` con el SQL directo (podés usar `{{ ref(...) }}`
-/ `{{ source(...) }}` adentro):
+Un `dbt build` con selector no corre los snapshots. Sin selector sí los incluye
+al final. Y `dbt snapshot --full-refresh` borra la historia acumulada, que no se
+puede recuperar.
+
+## Analyses
+
+Los archivos de `analyses/` se compilan pero no se ejecutan solos. `dbt show` los
+corre directo:
 
 ```bash
-dbt show --inline "select top 10 * from {{ source('dato_solutions', 'Ventas_Ahorrazo') }} where cliente_id is null"
-```
-
-## 5. Tests
-
-```bash
-# Todos los tests de un modelo puntual
-dbt test --select fct_ventas_36m
-
-# Un test custom puntual (los archivos sueltos en tests/)
-dbt test --select assert_cliente_id_limpio_no_explota
-```
-
-## 6. Ya corrimos esto contra la base real (referencia de lo hecho)
-
-```bash
-dbt debug
-dbt build --select staging fct_ventas_36m
+dbt show --select verificar_dependencia_c2_c1
 dbt show --select perfilar_calidad_cliente_id --limit 20
 ```
 
-Resultado: staging + `fct_ventas_36m` construidos en `dbt_dev` (schema de
-desarrollo, no toca tablas de producción), 20/20 tests en verde. El
-perfilado de calidad de `cliente_id` mostró 51 casos raros (19 con
-caracteres no contemplados + 32 que quedan vacíos tras limpiar) sobre
-800.930 ids totales -- pendiente de revisar esos casos puntuales antes
-de dar por buena la limpieza del todo.
+Algunos tienen varios `select` separados por punto y coma, y ahí `dbt show`
+devuelve una sola grilla. Para esos conviene `dbt compile --select <nombre>` y
+correr a mano el archivo que queda en `target/compiled/`. Los que están escritos
+en SQL plano, sin `ref()`, se pegan directo en el cliente de SQL.
+
+Para una consulta de una sola vez que no amerita un archivo:
+
+```bash
+dbt show --inline "select top 10 * from {{ ref('mayoristas_v3_umbrales') }}"
+```
+
+## Tests
+
+```bash
+# Todos los tests de un modelo
+dbt test --select mayoristas_v3_resumen
+
+# Un test puntual de los que viven en tests/
+dbt test --select assert_unidades_con_variancia
+```
+
+Hay tres tests propios además de los declarados en los `schema.yml`:
+
+`assert_ventas_actualizada_mes_cerrado` avisa si la fuente no terminó de cargar
+el mes cerrado más reciente. No usa `dbt source freshness` porque ese mecanismo
+solo admite umbrales relativos del tipo "hace N días" y acá el corte es de
+calendario.
+
+`assert_unidades_con_variancia` avisa qué unidad de medida tiene Q1 igual a Q3, y
+por lo tanto está usando el fallback del corte de factura grande.
+
+`assert_cliente_id_limpio_no_explota` revisa que la heurística de colapso de
+identificadores no esté fusionando clientes distintos.
+
+Los tres están en `severity: warn` a propósito: una falla de DAG tiene que
+significar un problema real de ejecución, no una alerta de contenido. El DAG
+diario lee el resultado en `run_results.json` y manda su propio mail.
+
+## Dónde mirar cuándo algo no cierra
+
+Antes que nada, el período que tiene cada tabla:
+
+```bash
+dbt compile --select verificar_ventana_de_los_marts
+```
+
+Todas las tablas de la cadena tienen que cubrir el mismo rango de fechas. La que
+no coincida es la que no se reconstruyó con las otras, y es donde van a aparecer
+clientes sin clasificación o fechas fuera del calendario en el tablero.
+
+No sirve mirar `create_date` ni `modify_date` en `sys.objects`: esas columnas
+reflejan cambios de estructura y no de contenido, así que una tabla recargada
+entera puede seguir mostrando la fecha de la semana pasada.

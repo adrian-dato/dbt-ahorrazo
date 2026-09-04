@@ -13,8 +13,7 @@
 -- resultante a mano, o `dbt show --select verificar_hipotesis_nuevo_dual`.
 --
 -- 3 secciones -- solo puede haber 1 SELECT final activo a la vez, para
--- pasar de una a otra comentar la activa y descomentar la siguiente
--- (mismo patrón que validar_clientes_mapeo_limpio.sql):
+-- pasar de una a otra comentar la activa y descomentar la siguiente:
 --
 --   1) (activa por default) Resumen comparativo: ¿el % de eventos cuyo
 --      cliente_id_limpio viene de 2+ cliente_id crudos es más alto en

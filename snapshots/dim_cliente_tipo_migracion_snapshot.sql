@@ -30,7 +30,7 @@
 --
 -- Primer uso de snapshots en este proyecto -- no probado todavía contra
 -- dbt-sqlserver (adaptador comunitario, mismo riesgo ya conocido que con
--- contracts). Ver PENDIENTES.md.
+-- contracts).
 
 {% snapshot dim_cliente_tipo_migracion_snapshot %}
 

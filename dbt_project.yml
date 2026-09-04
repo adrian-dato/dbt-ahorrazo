@@ -16,8 +16,7 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Repo compartido por los 3 proyectos del portfolio (ver
-# PLAN_MAESTRO_REINGENIERIA.md en la raíz de proyectos/). staging/ e
+# Repo compartido por los tres proyectos del portfolio. staging/ e
 # intermediate/ son de fuente única, consumidos por los 3 marts.
 # Cada modelo de marts/<proyecto> se tagea con el nombre del proyecto
 # para poder correr `dbt build --select tag:<proyecto>` desde el DAG
@@ -45,6 +44,15 @@ vars:
   # del notebook dice "30%" pero el valor real usado en el código es
   # 0.40; se porta el valor real, no el comentario desactualizado.
   mayoristas_pct_grandes_minimo: 0.40
+
+  # Mayoristas -- cortes de frecuencia de compra (días promedio entre
+  # visitas) para mayoristas_v3_frecuencia_compra. A diferencia de los
+  # umbrales de la clasificación, NO son percentiles del dato: semana,
+  # quincena y mes son conceptos del negocio. Se confirman con el equipo
+  # comercial, no se calibran contra la distribución.
+  frecuencia_semanal_dias: 10
+  frecuencia_quincenal_dias: 20
+  frecuencia_mensual_dias: 45
 
   # Canibalización v3 -- metodología de eventos de migración
   # (canibalizacion_v3.py), independiente de meses_ventana_canibalizacion
