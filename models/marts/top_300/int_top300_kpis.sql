@@ -15,7 +15,7 @@
 {{ config(materialized='view') }}
 
 with ventas as (
-    select * from {{ ref('int_ventas_12m') }}
+    select * from {{ ref('int_ventas_12m_tabla') }}
 ),
 
 union_ambitos as (

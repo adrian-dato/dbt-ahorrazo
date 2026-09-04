@@ -10,7 +10,7 @@
 -- push-down no hace falta esa optimización, el resultado final es
 -- idéntico.
 --
--- Pendiente (no bloqueante, ver PENDIENTES.md): enriquecer con
+-- Pendiente, sin bloquear nada: enriquecer con
 -- metadata de producto (nombre/categoria/precio desde dbo.Productos)
 -- -- el notebook lo hace en una celda aparte, no portado todavía.
 --
@@ -74,7 +74,7 @@ ventas_top300 as (
             'GLOBAL' as ambito,
             e.producto_id,
             sum(e.unidades) as unidades_ticket_producto
-        from {{ ref('int_ventas_12m') }} e
+        from {{ ref('int_ventas_12m_tabla') }} e
         group by e.producto_id, e.ticket_id
 
         union all
@@ -83,7 +83,7 @@ ventas_top300 as (
             cast(e.pdv_id as varchar(50)) as ambito,
             e.producto_id,
             sum(e.unidades) as unidades_ticket_producto
-        from {{ ref('int_ventas_12m') }} e
+        from {{ ref('int_ventas_12m_tabla') }} e
         group by e.pdv_id, e.producto_id, e.ticket_id
     ) v
     inner join top300 t
