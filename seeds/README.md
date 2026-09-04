@@ -1,13 +1,13 @@
 # seeds/
 
-Datos de referencia versionados en Git, en vez de literales hardcodeados
-en SQL o en celdas de notebook.
+Datos de referencia versionados en Git, en lugar de valores escritos dentro de
+una consulta SQL o de una celda de notebook.
 
-- `dim_sucursal_mapeo.csv` — portado desde `canibalizacion_ahorrazo/seeds/`
-  (mapeo `pdv_id` → `sucursal_codigo`/`sucursal_nombre`; reemplaza el
-  `PIVOT ... FOR pdv_id IN ([3],[5],[6])` hardcodeado). Los nombres reales
-  de sucursal siguen como `TODO` en el CSV, pendiente de completar.
-- `productos_excluidos.csv` — hecho (Fase 3). Los 13 `producto_id` de
-  `excluir_producto_id` en `top_300_productos.ipynb` (celda 916),
-  copiados tal cual -- no reinventados. Unifica esa lista, antes solo
-  usada por Top 300, para los 3 proyectos vía `int_ventas_elegibles`.
+`dim_sucursal_mapeo.csv` traduce `pdv_id` a código y nombre de sucursal. Viene de
+`canibalizacion_ahorrazo/seeds/` y reemplaza el `PIVOT ... FOR pdv_id IN ([3],[5],[6])`
+que estaba escrito a mano en las consultas.
+
+`productos_excluidos.csv` tiene los trece `producto_id` que el equipo comercial
+aparta del análisis. Salieron de la lista `excluir_producto_id` de
+`top_300_productos.ipynb`, copiados uno por uno. Antes esa lista la usaba solo
+Top 300; ahora la aplican los tres proyectos a través de `int_ventas_elegibles`.
