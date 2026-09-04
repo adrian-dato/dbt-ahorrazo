@@ -12,7 +12,7 @@
 -- Usa ref('int_ventas_elegibles') para las reglas de exclusión
 -- (empresa/categoría/cliente test/producto excluido) en vez de la copia
 -- inline que tenía antes -- cierra la duplicación que había quedado
--- pendiente desde Fase 3 (ver PENDIENTES.md). CAMBIO DE RESULTADO real,
+-- pendiente. CAMBIO DE RESULTADO real,
 -- no solo de código: int_ventas_elegibles también excluye los 13
 -- producto_id de seeds/productos_excluidos.csv (ids de test/placeholder),
 -- regla que hasta ahora solo aplicaba a Top 300. Confirmado con el

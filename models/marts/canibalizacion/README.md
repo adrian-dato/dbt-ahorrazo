@@ -1,38 +1,47 @@
 # marts/canibalizacion/
 
 Reemplaza la cadena `proc_1_36m.sql` → `proc_2_36m.sql` →
-`canibalizacion_v1_usado.ipynb` de `canibalizacion_ahorrazo`. Ver
-`propuesta_reingenieria_pipeline.md` en ese repo para el detalle completo
-(es el proyecto más avanzado del portfolio — sirve de referencia).
+`canibalizacion_v1_usado.ipynb` del repo `canibalizacion_ahorrazo`. El detalle
+del diagnóstico está en `propuesta_reingenieria_pipeline.md`, en ese repo.
 
-`fct_ventas_36m` -- portado (Fase 1). Idéntico en lógica al original de
-`canibalizacion_ahorrazo/models/marts/`, con un solo cambio: la var
-`meses_ventana` pasó a llamarse `meses_ventana_canibalizacion` para no
-chocar con las vars de los otros proyectos en el `dbt_project.yml`
-compartido. Las reglas de exclusión (`id_empresa`, `bolsa`, `egre`/`servi`,
-cliente de test) siguen inline por ahora -- se mueven a
-`ref('int_ventas_elegibles')` recién en Fase 3.
+## Dos metodologías conviviendo
 
-Pendientes (Fase 4.1 de `PLAN_MAESTRO_REINGENIERIA.md`):
-- `fct_ventas_36m_pivotado.sql` — usa el seed `dim_sucursal_mapeo`
-  (ya portado a `seeds/`) en vez del
-  `PIVOT ... FOR pdv_id IN ([3],[5],[6])` hardcodeado.
-- `dim_cliente_tipo_migracion.sql` — traduce `_conditions()`
-  (el `df.apply(axis=1)` del notebook actual) a `LAG()`/window functions.
+La **v1** clasifica a cada cliente en un tipo de migración entre sucursales.
+`fct_ventas_36m` arma la ventana de 36 meses, `fct_ventas_36m_pivotado` la abre
+por sucursal usando el seed `dim_sucursal_mapeo`, y `dim_cliente_tipo_migracion`
+aplica las condiciones que en el notebook estaban en un `df.apply(axis=1)`.
 
-## `fct_ventas_agrupadas_24m` — reemplazo de un script legacy sin orquestar
+La **v3** trabaja con eventos de migración en lugar de con un tipo fijo por
+cliente. Son cuatro modelos: `int_canibalizacion_migracion_base`,
+`dim_cliente_migracion_eventos`, `fct_canibalizacion_evolutivo_cliente` y
+`fct_canibalizacion_migracion_resumen`, portados de `canibalizacion_v3.py`.
 
-Reemplaza `scripts-sql-ahorrazo/prod/ventas_agrupadas_24m.sql`
-(`dbo.ventas_ahorrazo_agrupadas_24m`) -- tabla fuente de un `.pbix` de
-Canibalización que nunca tuvo ningún proceso que la volviera a correr.
-Grano mes × cliente_id_limpio × pdv_id × categoria_1-4 × marca ×
-tipo_persona, con `unidades`/`venta_gs`/`cant_tickets`.
+**El DAG semanal reconstruye solo la cadena de la v1.** Corre
+`dbt build --select +dim_cliente_tipo_migracion`, y los cuatro modelos de la v3
+no son ancestros de ese modelo, así que ninguna corrida programada los toca:
+quedan con la ventana del día en que alguien los corrió a mano. Son dos
+decisiones separadas: cambiar el selector del DAG a `+tag:canibalizacion`, que no
+depende de validar nada, y el cutover de v1 a v3, que sí.
 
-3 decisiones tomadas a propósito distinto al legacy, confirmadas con el
-usuario: ventana anclada a `periodo_max` (no `GETDATE()`), filtros de
-producto vía `int_productos_limpio` (más estrictos -- también excluye
-Activo/Insumos y `productos_excluidos`), y `tipo_persona` vía la macro
-actual (no la heurística vieja del script). Detalle completo en el
-comentario de cabecera del modelo.
+## `fct_ventas_agrupadas_24m`
 
-**Estado: código escrito, sin correr contra la base real todavía.**
+Reemplaza a `scripts-sql-ahorrazo/prod/ventas_agrupadas_24m.sql`, que escribía
+`dbo.ventas_ahorrazo_agrupadas_24m`. Esa tabla alimenta un `.pbix` de
+Canibalización y no tenía ningún proceso que la volviera a correr. Ahora se
+reconstruye desde el DAG mensual.
+
+El grano es mes × cliente × sucursal × las cuatro categorías × marca ×
+tipo de persona, con unidades, venta y cantidad de tickets.
+
+Se apartó del script original en tres puntos, confirmados con el usuario. La
+ventana se ancla al período máximo del dato y no a `GETDATE()`. Los filtros de
+producto salen de `int_productos_limpio`, que además de lo que excluía el script
+saca activos, insumos y la lista de `productos_excluidos`. Y `tipo_persona` sale
+de la macro compartida en lugar de la heurística que traía el script. El motivo
+de cada uno está en el comentario de cabecera del modelo.
+
+## Nota sobre las variables
+
+La ventana de este proyecto se llama `meses_ventana_canibalizacion` y no
+`meses_ventana`, porque el `dbt_project.yml` es compartido con los otros dos
+proyectos y los nombres cortos se pisaban entre sí.

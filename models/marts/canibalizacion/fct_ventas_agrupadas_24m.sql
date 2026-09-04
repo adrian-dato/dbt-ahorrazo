@@ -32,8 +32,8 @@
 --     cliente_id_limpio NULL. No se replicó el filtro adicional
 --     LEN(cliente_id_limpio) > 4 del legacy tampoco -- la limpieza de
 --     clientes actual ya maneja ids no identificables poniendo
---     cliente_id_limpio en NULL (ver PENDIENTES.md, "Bugs encontrados"
---     punto 2), es el mecanismo equivalente con un criterio más
+--     cliente_id_limpio en NULL, que es el mecanismo equivalente con un
+--     criterio más
 --     principista que un umbral de longitud arbitrario.
 
 {{ config(materialized='table') }}
