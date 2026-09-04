@@ -3,8 +3,20 @@ version: 2
 # Fuentes consolidadas del portfolio: declaradas UNA sola vez acá y
 # reutilizadas por los 3 proyectos (canibalizacion, top_300, mayoristas)
 # vía staging/. Antes de esto, cada proyecto tenía su propia copia de
-# estas tablas apuntadas desde SQL suelto o notebooks — ver
-# PLAN_MAESTRO_REINGENIERIA.md §1 (hallazgos #2, #3, #4).
+# estas tablas apuntadas desde SQL suelto o notebooks directamente
+# contra dbo.
+#
+# Lo único que el cliente/proveedor de datos entrega directo es
+# Ventas_Ahorrazo, Clientes y productos. Las demás tablas dbo.* que
+# existían (clientes_mapeo, clientes_limpio, entre otras) las generaban
+# procesos legacy (stored procs, KNIME, scripts sueltos), no el
+# proveedor, y se reemplazaron por modelos de este proyecto: ninguna de
+# las dos queda declarada acá. clientes_limpio se dio de baja con
+# stg_clientes_limpio repuntando a int_clientes_limpio, y clientes_mapeo
+# con stg_clientes_mapeo repuntando a int_clientes_mapeo_limpio, los dos
+# desde la Fase 2 (confirmada). Los analyses que comparaban contra esas
+# dos tablas (validar_clientes_mapeo_limpio.sql, validar_tipo_persona.sql)
+# ya cumplieron su función y se eliminaron junto con la fuente.
 
 sources:
   - name: dato_solutions
@@ -12,7 +24,7 @@ sources:
     description: >
       Base replicada de producción provista por el cliente. Contención de
       recursos con otros pipelines pesados (forecast) mitigada en Fase 0.5
-      vía Pool de Airflow — ver PLAN_MAESTRO_REINGENIERIA.md.
+      vía Pool de Airflow.
     tables:
       - name: Ventas_Ahorrazo
         description: >
@@ -41,33 +53,18 @@ sources:
 
       - name: Clientes
         description: >
-          Tabla cruda de clientes, origen de clientes_mapeo/clientes_limpio.
-          Insumo de int_clientes_mapeo_limpio (Fase 2) — reemplaza el
-          stored proc sp_refresh_clientes_mapeo_limpio.
+          Tabla cruda de clientes. Insumo de int_clientes_normalizados, que
+          alimenta a su vez int_clientes_limpio e int_clientes_mapeo_limpio
+          -- reemplazan al stored proc legacy sp_refresh_clientes_mapeo_limpio
+          y a las tablas dbo.clientes_mapeo/dbo.clientes_limpio que
+          generaba (dadas de baja como source acá, ver
+          stg_clientes_mapeo/stg_clientes_limpio).
         columns:
           - name: cliente_id
           - name: ci_ruc
           - name: nombre
           - name: celular
           - name: mail
-
-      - name: clientes_mapeo
-        description: >
-          Mapeo de cliente_id de origen a cliente_id_limpio. Hoy generado
-          por scripts-sql-ahorrazo/prod/clientes_mapeo_limpio.sql (single
-          point of failure del portfolio — ver §1). Se migra a
-          int_clientes_mapeo_limpio en Fase 2; hasta entonces sigue siendo
-          fuente (tabla generada por el proceso legacy).
-        columns:
-          - name: cliente_id
-          - name: cliente_id_limpio
-
-      - name: clientes_limpio
-        description: Datos descriptivos del cliente (nombre, ci_ruc) por cliente_id_limpio. Mismo origen/plan de migración que clientes_mapeo.
-        columns:
-          - name: cliente_id_limpio
-          - name: nombre
-          - name: ci_ruc
 
       - name: productos
         description: >

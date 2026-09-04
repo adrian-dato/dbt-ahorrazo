@@ -1,4 +1,4 @@
--- Fase 2 VALIDADA (ver PENDIENTES.md): repuntado de
+-- Repuntado de
 -- source('dato_solutions','clientes_limpio') (proceso legacy) a
 -- ref('int_clientes_limpio').
 select

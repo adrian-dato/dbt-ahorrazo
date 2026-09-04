@@ -2,7 +2,12 @@ version: 2
 
 models:
   - name: stg_clientes_mapeo
-    description: Mapeo cliente_id -> cliente_id_limpio, tal como lo publica hoy el proceso legacy. Se reemplaza de fuente en Fase 2 (int_clientes_mapeo_limpio).
+    description: >
+      Mapeo cliente_id -> cliente_id_limpio. Repunta a
+      int_clientes_mapeo_limpio desde la Fase 2 (confirmada) -- ya no lee
+      de dbo.clientes_mapeo. Nombre y columnas sin cambios a propósito
+      con el cutover: los 3 proyectos que lo consumen no necesitaron
+      tocar nada.
     columns:
       - name: cliente_id
         tests:
@@ -50,9 +55,12 @@ models:
       1:1 sobre dbo.Ventas_Ahorrazo. Contract enforced: si el tipo real
       de una columna cambia en la fuente (o alguien saca un cast sin
       querer), dbt falla acá mismo en el build, en vez de que aparezca
-      como un error de conversión río abajo en algún mart (ver
-      PENDIENTES.md, bug de producto_id -- ese fue el motivo de agregar
-      esto).
+      como un error de conversión río abajo en algún mart. Se agregó por
+      el error real 245/248: producto_id no es puramente numérico (ej.
+      "1685-G", o supera el rango de int como "7506295378"), y un seed
+      inferido como int sobre esa columna hacía que SQL Server intentara
+      convertir este lado primero por precedencia de tipos y explotara
+      (mismo motivo del cast a varchar en stg_productos).
     config:
       contract:
         enforced: true
@@ -79,14 +87,14 @@ models:
         data_type: varchar(255)
 
   - name: stg_clientes_limpio
-    description: Dimensión por cliente_id_limpio, tal como la publica hoy el proceso legacy. Se reemplaza de fuente en Fase 2 (int_clientes_mapeo_limpio).
+    description: Dimensión por cliente_id_limpio. Repunta a int_clientes_limpio desde la Fase 2 (confirmada) -- ya no lee de dbo.clientes_limpio. Mismo motivo de mantener nombre/columnas que stg_clientes_mapeo.
     columns:
       - name: cliente_id_limpio
         tests:
           - not_null
 
   - name: stg_clientes
-    description: 1:1 sobre dbo.Clientes (tabla cruda). Insumo de int_clientes_mapeo_limpio (Fase 2), no consumido directamente por ningún mart todavía.
+    description: 1:1 sobre dbo.Clientes (tabla cruda). Insumo de int_clientes_normalizados -- no consumido directamente por ningún mart.
     columns:
       - name: cliente_id
         tests:

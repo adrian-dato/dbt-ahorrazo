@@ -3,7 +3,7 @@
 -- optimizador invirtiera la conversión implícita en el JOIN contra
 -- Ventas_Ahorrazo.cliente_id).
 --
--- Fase 2 VALIDADA (ver PENDIENTES.md): repuntado de
+-- Repuntado de
 -- source('dato_solutions','clientes_mapeo') (proceso legacy,
 -- clientes_mapeo_limpio.sql, sin correr hace meses -- confirmado con el
 -- usuario) a ref('int_clientes_mapeo_limpio'). conteo_solo_nuevo=0 (sin
