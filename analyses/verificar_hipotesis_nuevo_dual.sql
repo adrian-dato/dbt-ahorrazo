@@ -1,4 +1,4 @@
--- Verifica la hipótesis abierta en PENDIENTES.md (canibalizacion_ahorrazo)
+-- Verifica la hipótesis abierta sobre Canibalización
 -- sobre el crecimiento de 'Nuevo - Dual' en dim_cliente_migracion_eventos
 -- (11.210 -> 20.057 eventos, +78,9% vs. +2,8% del total de eventos):
 -- que el dedup de cliente_id de Fase 2 (int_clientes_mapeo_limpio) esté

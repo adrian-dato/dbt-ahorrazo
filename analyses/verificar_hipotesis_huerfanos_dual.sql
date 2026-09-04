@@ -1,5 +1,5 @@
 -- Segunda hipótesis para el crecimiento sin explicar de 'Nuevo - Dual'
--- (ver PENDIENTES.md de canibalizacion_ahorrazo -- la primera hipótesis,
+-- (la primera hipótesis,
 -- dedup multi-cliente_id, se verificó en verificar_hipotesis_nuevo_dual.sql
 -- y explica solo ~18-35% del crecimiento).
 --
