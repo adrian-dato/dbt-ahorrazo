@@ -125,14 +125,16 @@ Los archivos de `analyses/` se compilan pero no se ejecutan solos. `dbt show` lo
 corre directo:
 
 ```bash
-dbt show --select verificar_dependencia_c2_c1
+dbt show --select monitorear_ejecucion_actual
 dbt show --select perfilar_calidad_cliente_id --limit 20
 ```
 
 Algunos tienen varios `select` separados por punto y coma, y ahí `dbt show`
-devuelve una sola grilla. Para esos conviene `dbt compile --select <nombre>` y
-correr a mano el archivo que queda en `target/compiled/`. Los que están escritos
-en SQL plano, sin `ref()`, se pegan directo en el cliente de SQL.
+devuelve una sola grilla -- `metodologia_mayoristas_v3` es el caso extremo,
+varias decenas de consultas en un solo archivo, divididas en secciones. Para
+esos conviene `dbt compile --select <nombre>` y correr a mano el archivo que
+queda en `target/compiled/`. Los que están escritos en SQL plano, sin `ref()`,
+se pegan directo en el cliente de SQL.
 
 Para una consulta de una sola vez que no amerita un archivo:
 
