@@ -62,27 +62,35 @@ select
     q1 as q1_unidades,
     q3 as q3_unidades,
     q3 - q1 as iqr_unidades,
-    -- IQR efectivo. Cuando Q1 y Q3 son iguales el IQR da 0 y la fórmula
-    -- Q3 + 3xIQR colapsa a Q3 -- el corte deja de significar "muy por
-    -- encima del grueso" y pasa a significar "arriba del percentil 75",
-    -- que es otra cosa y mucho más fácil de cumplir. Para comparar: en
-    -- Unid el corte da 67 contra un Q3 de 19, tres veces y media más
-    -- arriba; en Pack, con IQR 0, corte y Q3 eran el mismo número (1).
-    --
-    -- En ese caso se usa Q3 en lugar del IQR, así el corte queda en 4xQ3
-    -- y conserva la proporción de las otras unidades en vez de
-    -- desaparecer. Para Pack: 1 + 3x1 = 4, o sea que una factura de packs
-    -- cuenta como grande a partir de 5.
+    -- IQR efectivo, expuesto para poder reproducir el corte a mano. Cuando
+    -- Q1 y Q3 son iguales el IQR real da 0; acá se muestra Q3 en su lugar,
+    -- así el valor sigue siendo positivo y comparable con las otras
+    -- unidades. Desde que el corte de abajo dejó de depender de esta
+    -- columna en el caso IQR=0 (ver umbral_ticket_grande), esta es
+    -- puramente informativa en ese caso: ya no entra en la cuenta del
+    -- corte.
     --
     -- Q3 no puede dar 0 acá: int_mayoristas_v3_tickets_por_unidad ya
-    -- descarta los tickets con unidades <= 0, así que el fallback nunca
-    -- deja el corte en cero.
+    -- descarta los tickets con unidades <= 0.
     case
         when q3 - q1 <= 0 then q3
         else q3 - q1
     end as iqr_aplicado,
-    q3 + 3 * case
-                when q3 - q1 <= 0 then q3
-                else q3 - q1
-             end as umbral_ticket_grande
+    -- El corte de "factura grande" es Q3 + 3xIQR cuando el IQR real
+    -- (q3 - q1) es positivo. Para comparar: en Unid el corte da 67 contra
+    -- un Q3 de 19, tres veces y media más arriba -- un corte de outlier de
+    -- verdad.
+    --
+    -- Cuando el IQR real da 0 esa fórmula deja de significar eso: es el
+    -- caso de Pack, donde Q1 y Q3 valen los dos 1 (tres de cada cuatro
+    -- facturas llevan un solo pack). Sustituir el IQR por Q3 y aplicar la
+    -- misma fórmula daba 4xQ3, una proporción elegida solo para no perder
+    -- el corte, sin relación con lo que separa una factura grande de una
+    -- normal en esa unidad. En su lugar, cuando el IQR real es 0 el corte
+    -- pasa a ser 2xQ3 directamente: el doble de lo que ya es una factura
+    -- típica de esa unidad. Para Pack, Q3 = 1, así que el corte queda en 2.
+    case
+        when q3 - q1 <= 0 then 2 * q3
+        else q3 + 3 * (q3 - q1)
+    end as umbral_ticket_grande
 from cuartiles

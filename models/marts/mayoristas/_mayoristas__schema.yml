@@ -42,9 +42,12 @@ models:
           - not_null
       - name: iqr_aplicado
         description: >
-          El IQR que entra en la cuenta: umbral_ticket_grande =
-          q3_unidades + 3 * iqr_aplicado. Igual al IQR crudo salvo cuando
-          ese da 0 (Q1 = Q3), y ahí vale Q3.
+          El IQR que entra en la cuenta cuando el IQR crudo es positivo:
+          umbral_ticket_grande = q3_unidades + 3 * iqr_aplicado. Igual al
+          IQR crudo salvo cuando ese da 0 (Q1 = Q3), y ahí vale Q3 -- pero
+          en ese caso el corte no sale de esta columna, sale de 2xQ3
+          directo. iqr_aplicado queda como valor informativo, no como
+          insumo del corte.
         tests:
           - not_null
 
@@ -58,7 +61,8 @@ models:
       grande?" a nivel de factura individual, no un promedio mensual.
       umbral_ticket_grande = Q3 + 3xIQR calculado POR SEPARADO en cada
       unidad_medida (a diferencia del umbral único y mezclado de v2) --
-      solo Unid/KILOS/LITROS/Pack, las únicas 4 unidades con volumen y
+      salvo cuando el IQR real da 0 (Pack), donde el corte es 2xQ3 directo
+      -- solo Unid/KILOS/LITROS/Pack, las únicas 4 unidades con volumen y
       variancia real. Q1/Q3 se calculan en ramas separadas por
       unidad_medida (UNION ALL) en vez de una ventana particionada, para
       no repartir el trabajo paralelo por una columna muy despareja (ver
@@ -92,10 +96,11 @@ models:
           - not_null
       - name: iqr_aplicado
         description: >
-          El IQR que entra en umbral_ticket_grande. Es q3 - q1, salvo
-          cuando eso da 0 (Q1 = Q3) y ahí vale q3 -- con IQR 0 la fórmula
-          colapsaría a Q3 y el corte dejaría de separar. Ver el CTE
-          umbrales del modelo.
+          Es q3 - q1, salvo cuando eso da 0 (Q1 = Q3) y ahí vale q3, para
+          mostrar un valor positivo y comparable. Entra en
+          umbral_ticket_grande solo cuando el IQR real es positivo -- con
+          IQR 0 (Pack) el corte no sale de esta columna, sale de 2xQ3
+          directo. Ver el CTE umbrales del modelo.
         tests:
           - not_null
       - name: ticket_grande
@@ -197,10 +202,12 @@ models:
           - not_null
       - name: iqr_aplicado
         description: >
-          El IQR que entra en la cuenta: umbral_ticket_grande =
-          q3_unidades + 3 * iqr_aplicado. El multiplicador es 3, no el 1,5
-          estándar de outlier, por decisión explícita del negocio. Vale lo
-          mismo que iqr_unidades salvo cuando ese da 0.
+          El IQR que entra en la cuenta cuando el IQR crudo es positivo:
+          umbral_ticket_grande = q3_unidades + 3 * iqr_aplicado. El
+          multiplicador es 3, no el 1,5 estándar de outlier, por decisión
+          explícita del negocio. Vale lo mismo que iqr_unidades salvo
+          cuando ese da 0 (Pack): ahí el corte es 2xQ3 directo y esta
+          columna queda solo como referencia.
         tests:
           - not_null
 

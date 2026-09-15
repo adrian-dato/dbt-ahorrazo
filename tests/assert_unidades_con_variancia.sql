@@ -3,10 +3,10 @@
 -- Avisa cuando alguna unidad de medida de la metodologia tiene Q1 igual a
 -- Q3, o sea IQR crudo 0.
 --
--- No es un error: mayoristas_v3_tickets_unidad tiene el fallback que en
--- ese caso usa Q3 en lugar del IQR, asi que el corte sigue existiendo
--- (para Pack queda en 4, no en 1). Pero conviene verlo en cada corrida,
--- porque una unidad con IQR 0 es una unidad donde casi todos los tickets
+-- No es un error: int_mayoristas_v3_umbral_ticket tiene el fallback que en
+-- ese caso usa 2xQ3 en lugar de Q3 + 3xIQR, asi que el corte sigue
+-- existiendo (para Pack queda en 2, no en 1). Pero conviene verlo en cada
+-- corrida, porque una unidad con IQR 0 es una unidad donde casi todos los tickets
 -- son iguales, y eso es exactamente la condicion por la que Blis, Metros
 -- y Ramo quedaron afuera de C1 y C2 desde el principio.
 --

@@ -21,9 +21,9 @@ los clientes si ese fuera más alto. También basta con cumplirlo en una unidad.
 
 En Pack, Q1 y Q3 valen 1: tres de cada cuatro facturas llevan un solo pack. Con
 IQR cero la fórmula se reduce a Q3 y el corte deja de separar, así que en ese caso
-se usa Q3 en lugar del IQR y el corte queda en 4. El test
-`assert_unidades_con_variancia` informa en cada corrida qué unidad de medida está
-en esa situación.
+el corte pasa a ser el doble de Q3 en lugar de aplicar `Q3 + 3 × IQR`, y queda en
+2. El test `assert_unidades_con_variancia` informa en cada corrida qué unidad de
+medida está en esa situación.
 
 **C3, valor por visita.** Venta promedio por factura, no la suma del período:
 sumar mezclaría a quien gasta mucho por visita con quien viene muchas veces. Es

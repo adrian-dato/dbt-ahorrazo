@@ -30,12 +30,13 @@
 -- notebook.
 --
 -- umbral_ticket_grande = Q3 + 3xIQR de unidades por ticket, calculado
--- POR SEPARADO en cada unidad_medida (con el IQR efectivo del CTE
--- umbrales -- ver ahí el caso Q1 = Q3) -- a diferencia de
--- la v2, que calculaba un único umbral
--- global mezclando todas las unidades, este es el fix central de v3. El
--- multiplicador es 3 y no el 1,5 estándar de outlier, por decisión
--- explícita del negocio.
+-- POR SEPARADO en cada unidad_medida -- a diferencia de la v2, que
+-- calculaba un único umbral global mezclando todas las unidades, este es
+-- el fix central de v3. El multiplicador es 3 y no el 1,5 estándar de
+-- outlier, por decisión explícita del negocio. Excepción: cuando el IQR
+-- real da 0 (Q1 = Q3, el caso de Pack) el corte no sale de esa fórmula
+-- sino de 2xQ3 directo -- ver el caso Q1 = Q3 en el CTE umbrales de
+-- int_mayoristas_v3_umbral_ticket.
 --
 -- Q1/Q3 se calculan en ramas separadas por unidad_medida (UNION ALL),
 -- no con PERCENTILE_CONT(...) OVER (PARTITION BY unidad_medida): la
@@ -75,8 +76,8 @@ select
     t.venta_gs,
     -- Q1, Q3 y el IQR que realmente se uso viajan con cada fila. Sin los
     -- numeros de origen nadie puede reproducir el corte con otra
-    -- herramienta, y sin iqr_aplicado quien rehaga la cuenta con q1 y q3
-    -- obtiene 1 para Pack en vez de 4 y concluye que el modelo esta mal.
+    -- herramienta, y quien rehaga la cuenta con q1 y q3 a mano obtiene 1
+    -- para Pack en vez de 2 y concluye que el modelo esta mal.
     u.q1_unidades,
     u.q3_unidades,
     u.iqr_aplicado,
