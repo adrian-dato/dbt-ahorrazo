@@ -142,3 +142,32 @@ models:
       - name: ticket_id
         tests:
           - not_null
+
+  - name: int_ventas_24m_tabla
+    description: >
+      Lo mismo que int_ventas_12m_tabla -- grano de línea, mismas
+      exclusiones, ventana de meses cerrados -- pero mirando 24 meses en
+      vez de 12. Existe para las preguntas de tendencia interanual, que
+      con una ventana de 12 meses no se pueden contestar porque la
+      ventana entera es el año: no hay período anterior contra el cual
+      comparar. A diferencia de fct_ventas_agrupadas_24m, que también
+      cubre 24 meses pero ya viene agregada a mes x cliente x sucursal x
+      categoría x marca, esta conserva producto_id y unidad_medida, así
+      que permite bajar a producto y separar kilos de unidades. No la
+      construye ningún DAG: no está tagueada y ningún modelo le hace ref,
+      se materializa solo cuando se la selecciona a propósito.
+    columns:
+      - name: cliente_id_limpio
+        description: >
+          Puede venir nulo, igual que en int_ventas_12m_tabla -- son
+          ventas de clientes que existen en Ventas pero no en la tabla de
+          Clientes. No lleva not_null a propósito.
+      - name: producto_id
+        tests:
+          - not_null
+      - name: fecha_venta
+        tests:
+          - not_null
+      - name: ticket_id
+        tests:
+          - not_null

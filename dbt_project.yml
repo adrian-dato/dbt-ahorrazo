@@ -32,6 +32,14 @@ vars:
   # modelo, no una copia del filtro por proyecto.
   ventana_meses_12m: 12
 
+  # La misma ventana, de 24 meses, para int_ventas_24m_tabla -- el grano
+  # de línea con un año y su comparable, que es lo que hace falta para
+  # cualquier pregunta de tendencia interanual. Var propia y no un
+  # múltiplo de ventana_meses_12m: mover la ventana de la clasificación
+  # mayorista no debería mover la de los análisis de tendencia, ni al
+  # revés.
+  ventana_meses_24m: 24
+
   # Top 300 — pesos del Puntaje Final
   top300_peso_ventas: 0.40
   top300_peso_tickets: 0.30
