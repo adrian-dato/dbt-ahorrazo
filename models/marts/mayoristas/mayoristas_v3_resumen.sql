@@ -18,6 +18,10 @@
 -- propio pero sí venta) -- por eso lee directo de int_ventas_12m, no de
 -- mayoristas_v3_tickets_unidad (que filtra a propósito solo
 -- Unid/KILOS/LITROS/Pack).
+--
+-- Corte de C3 en var('mayoristas_c3_percentil'), percentil 90 (antes
+-- 75): decisión de negocio, sube la vara de "cuánto tiene que dejar por
+-- factura" para entrar al top de valor por visita.
 
 {{ config(materialized='table') }}
 
@@ -50,7 +54,7 @@ ventas_cliente as (
 
 umbral_c3 as (
     select distinct
-        percentile_cont(0.75) within group (order by venta_promedio_ticket) over () as umbral
+        percentile_cont({{ var('mayoristas_c3_percentil') }}) within group (order by venta_promedio_ticket) over () as umbral
     from ventas_cliente
 ),
 

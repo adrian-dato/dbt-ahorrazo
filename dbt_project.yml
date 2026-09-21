@@ -53,6 +53,13 @@ vars:
   # 0.40; se porta el valor real, no el comentario desactualizado.
   mayoristas_pct_grandes_minimo: 0.40
 
+  # Mayoristas -- percentil de corte para C3 (venta promedio por
+  # ticket). Sube de 0.75 a 0.90 tras revisar un caso real con el
+  # equipo de Ahorrazo: junto con el cambio de base de C1/C2 (ver
+  # int_mayoristas_v3_tickets_por_unidad.sql), valida en
+  # analisis_mayorista/analisis_mayoristas_v4.ipynb.
+  mayoristas_c3_percentil: 0.90
+
   # Mayoristas -- cortes de frecuencia de compra (días promedio entre
   # visitas) para mayoristas_v3_frecuencia_compra. A diferencia de los
   # umbrales de la clasificación, NO son percentiles del dato: semana,

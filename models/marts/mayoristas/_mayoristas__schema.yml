@@ -21,6 +21,24 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: unidades
+        description: >
+          Promedio de unidades por producto distinto en esa factura y
+          unidad de medida (sum(unidades) / count(distinct producto_id)),
+          no la suma de la factura. Un cliente que se lleva 2 unidades de
+          9 productos distintos da 2, no 18 -- distingue "compra
+          variada" de "compra grande de pocos productos", que sumar no
+          distinguía. Alimenta el corte de "factura grande" (C2) y el
+          promedio por cliente (C1) en los modelos de abajo.
+        tests:
+          - not_null
+      - name: productos_distintos
+        description: >
+          count(distinct producto_id) de esa factura y unidad de medida
+          -- el denominador de `unidades`. Columna informativa, ningún
+          consumidor la usa directo hoy.
+        tests:
+          - not_null
 
   - name: int_mayoristas_v3_umbral_ticket
     description: >
