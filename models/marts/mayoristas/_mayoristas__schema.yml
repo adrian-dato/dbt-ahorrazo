@@ -21,22 +21,31 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
-      - name: unidades
+      - name: unidades_suma
         description: >
-          Promedio de unidades por producto distinto en esa factura y
-          unidad de medida (sum(unidades) / count(distinct producto_id)),
-          no la suma de la factura. Un cliente que se lleva 2 unidades de
-          9 productos distintos da 2, no 18 -- distingue "compra
-          variada" de "compra grande de pocos productos", que sumar no
-          distinguía. Alimenta el corte de "factura grande" (C2) y el
-          promedio por cliente (C1) en los modelos de abajo.
+          Suma cruda de unidades de esa factura y unidad de medida --
+          antes de dividir por productos_distintos. Es lo que hasta la
+          v3 se llamaba directamente `unidades`. Se conserva junto con
+          el resultado dividido para que se pueda explicar cualquier
+          valor de `unidades` sin recalcular nada (ej. "108 unidades
+          entre 32 productos distintos").
         tests:
           - not_null
       - name: productos_distintos
         description: >
-          count(distinct producto_id) de esa factura y unidad de medida
-          -- el denominador de `unidades`. Columna informativa, ningún
-          consumidor la usa directo hoy.
+          count(distinct producto_id) de esa factura y unidad de
+          medida -- el denominador de `unidades`.
+        tests:
+          - not_null
+      - name: unidades
+        description: >
+          Promedio de unidades por producto distinto en esa factura y
+          unidad de medida (unidades_suma / productos_distintos), no la
+          suma de la factura. Un cliente que se lleva 2 unidades de 9
+          productos distintos da 2, no 18 -- distingue "compra variada"
+          de "compra grande de pocos productos", que sumar no
+          distinguía. Alimenta el corte de "factura grande" (C2) y el
+          promedio por cliente (C1) en los modelos de abajo.
         tests:
           - not_null
 
@@ -100,6 +109,19 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: unidades_suma
+        description: >
+          Pasa sin tocar desde int_mayoristas_v3_tickets_por_unidad --
+          la suma cruda de esa factura, antes de dividir por
+          productos_distintos. Ver esa tabla para el detalle.
+        tests:
+          - not_null
+      - name: productos_distintos
+        description: >
+          Pasa sin tocar desde int_mayoristas_v3_tickets_por_unidad --
+          el denominador de `unidades` para esa factura.
+        tests:
+          - not_null
       - name: q1_unidades
         description: >
           Percentil 25 de unidades por ticket en esa unidad_medida. Mismo
@@ -151,6 +173,17 @@ models:
           - accepted_values:
               arguments:
                 values: ['Unid', 'KILOS', 'LITROS', 'Pack']
+      - name: productos_por_factura
+        description: >
+          Promedio de productos distintos por ticket de este cliente en
+          esta unidad de medida -- mismo grano que upt, no entra en
+          ningún puntaje. Explica de dónde sale el upt: un cliente con
+          upt alto y productos_por_factura bajo se lleva mucho de pocos
+          productos; uno con los dos altos igual promedia alto porque
+          compra variado en cantidad, no porque se lleve mucho de algo
+          puntual.
+        tests:
+          - not_null
       - name: c1_upt_alto
         tests:
           - not_null

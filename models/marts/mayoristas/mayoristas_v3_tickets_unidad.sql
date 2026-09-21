@@ -56,6 +56,12 @@
 -- unidad_medida, así que OVER() vacío es "toda la rama es la
 -- partición" -- no reintroduce la columna despareja. El DISTINCT
 -- colapsa las filas repetidas (mismo valor en cada fila de la rama).
+--
+-- `unidades` es el promedio de unidades por producto distinto de esa
+-- factura (ver int_mayoristas_v3_tickets_por_unidad.sql), no la suma.
+-- Este modelo pasa `unidades_suma` y `productos_distintos` sin tocar,
+-- para que quien mire una factura puntual en Power BI vea los tres
+-- números juntos y no solo el resultado ya dividido.
 
 {{ config(materialized='view') }}
 
@@ -72,6 +78,16 @@ select
     t.ticket_id,
     t.unidad_medida,
     t.fecha_venta,
+    -- unidades_suma y productos_distintos viajan junto con unidades (el
+    -- cociente de las dos) por el mismo motivo que viajan q1/q3/iqr mas
+    -- abajo: sin los numeros de origen, nadie puede justificarle a un
+    -- vendedor por que ESTA factura puntual dio "3 unidades por
+    -- producto" -- hace falta poder mostrar "9 productos, 27 unidades"
+    -- al lado, no solo el resultado ya dividido. Es la misma pregunta
+    -- que disparo el cambio de formula: "se llevo mucho, o se llevo
+    -- poco de muchas cosas distintas?".
+    t.unidades_suma,
+    t.productos_distintos,
     t.unidades,
     t.venta_gs,
     -- Q1, Q3 y el IQR que realmente se uso viajan con cada fila. Sin los

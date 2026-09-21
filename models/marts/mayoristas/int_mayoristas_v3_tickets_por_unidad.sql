@@ -24,10 +24,11 @@ select
     v.cliente_id_limpio,
     v.ticket_id,
     p.unidad_medida,
-    min(v.fecha_venta)                          as fecha_venta,  -- 1 sola fecha real por ticket, min() solo por sintaxis de group by
+    min(v.fecha_venta)                              as fecha_venta,  -- 1 sola fecha real por ticket, min() solo por sintaxis de group by
+    sum(v.unidades)                                 as unidades_suma,  -- la suma vieja, expuesta para poder explicar el porqué de `unidades` (ej. "108 unidades entre 32 productos") sin recalcular nada
+    count(distinct v.producto_id)                   as productos_distintos,
     sum(v.unidades) / count(distinct v.producto_id) as unidades,
-    count(distinct v.producto_id)               as productos_distintos,
-    sum(v.venta_gs)                             as venta_gs
+    sum(v.venta_gs)                                 as venta_gs
 from {{ ref('int_ventas_12m_tabla') }} v
 inner join {{ ref('int_productos_limpio') }} p
     on v.producto_id = p.producto_id

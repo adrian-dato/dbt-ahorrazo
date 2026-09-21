@@ -40,6 +40,12 @@
 -- como agregado simple con GROUP BY (falla con el error 10753 sin
 -- OVER). No es un PARTITION BY: cada rama ya viene filtrada a una sola
 -- unidad_medida. El DISTINCT colapsa las filas repetidas.
+--
+-- `productos_por_factura` es nueva: el promedio de productos distintos
+-- por ticket que ya trae mayoristas_v3_tickets_unidad, agregado acá al
+-- mismo grano que upt. No entra en el puntaje de C1 -- es la columna
+-- que le permite a alguien mirando este mart explicar el upt de un
+-- cliente sin tener que bajar a la tabla de facturas individuales.
 
 {{ config(materialized='table') }}
 
@@ -51,6 +57,13 @@ with metricas as (
         unidad_medida,
         count(*)                          as tickets_unicos,
         avg(unidades * 1.0)               as upt,
+        -- Promedio de productos distintos por factura, mismo grano que
+        -- upt. No alimenta ningún criterio -- es puramente explicativo:
+        -- deja ver si el upt de un cliente sale de facturas con pocos
+        -- productos en cantidad (upt alto, productos_por_factura bajo)
+        -- o de facturas variadas donde igual promedia alto (los dos
+        -- casos dan el mismo upt, y son historias de negocio distintas).
+        avg(productos_distintos * 1.0)    as productos_por_factura,
         avg(cast(ticket_grande as float))  as pct_tickets_grandes
     from {{ ref('mayoristas_v3_tickets_unidad') }}
     group by cliente_id_limpio, unidad_medida
@@ -84,6 +97,7 @@ select
     m.unidad_medida,
     m.tickets_unicos,
     m.upt,
+    m.productos_por_factura,
     m.pct_tickets_grandes,
     u.umbral_upt,
     u.umbral_pct,
