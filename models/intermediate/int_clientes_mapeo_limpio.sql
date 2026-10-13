@@ -10,25 +10,24 @@
 --   - Incremental: la detección de cliente_id "huérfanos" (que aparecen
 --     en Ventas_Ahorrazo pero no en Clientes -- paso B del proceso
 --     legacy) ya no escanea los 238M+ registros completos en cada
---     corrida, solo los últimos `dias_lookback_incremental` días. Un
---     cliente cuya ÚNICA venta histórica sea más antigua que esa
---     ventana no se detectaría hasta un `--full-refresh`; mismo
---     trade-off ya aceptado en fct_ventas_36m, documentado acá también.
---     El lado de Clientes (paso A) sí se recalcula completo en cada
---     corrida -- es una tabla chica, no la fuente del cuello de botella.
+--     corrida, solo desde el día 1 de hace `meses_lookback_incremental`
+--     meses cerrados hasta hoy, mes en curso incluido. Un cliente cuya
+--     ÚNICA venta histórica sea más antigua que esa ventana no se
+--     detectaría hasta un `--full-refresh`; mismo trade-off ya aceptado
+--     en fct_ventas_36m, documentado acá también. El lado de Clientes
+--     (paso A) sí se recalcula completo en cada corrida -- es una tabla
+--     chica, no la fuente del cuello de botella.
 --
 -- Cadencia: este modelo alimenta a los 3 proyectos, y los más exigentes
 -- (Canibalización, Top 300) tienen SLA semanal -- así que el mapeo de
--- clientes tiene que estar al menos igual de fresco. El lookback de 45
--- días se calcula contra `getdate()` (el momento de la corrida), no
--- contra la fecha de la última corrida exitosa -- por eso una cadencia
--- semanal queda cubierta con ~6x de margen (6 corridas atrás), sin
--- necesidad de trackear estado entre corridas: si una corrida semanal se
--- atrasa o se salta una semana, la siguiente corrida igual re-cubre todo
--- el período sin dejar un hueco de clientes sin mapear. El valor (45)
--- es el mismo ya validado en `dias_lookback_incremental` para
--- fct_ventas_36m en canibalizacion_ahorrazo, que ya opera semanal --
--- no es un número nuevo sin evidencia detrás.
+-- clientes tiene que estar al menos igual de fresco. El lookback se
+-- calcula contra la fecha de la corrida, no contra la última corrida
+-- exitosa, y cubre entre 59 y 92 días según el día del mes: una cadencia
+-- semanal queda cubierta con margen sin trackear estado entre corridas.
+-- Comparte la variable con fct_ventas_36m para que los dos modelos
+-- incrementales reprocesen el mismo período; acá no hay agregación por
+-- mes, así que el día de arranque no cambia el resultado, solo la
+-- cobertura.
 --
 -- unique_key = cliente_id: 1 fila por cliente_id, igual que el índice
 -- único CX_clientes_mapeo_cliente_id del proceso legacy.
@@ -76,7 +75,7 @@ ventas_recientes as (
     from {{ ref('stg_ventas') }}
     where cliente_id is not null
     {% if is_incremental() %}
-    and fecha_venta >= dateadd(day, -{{ var('dias_lookback_incremental') }}, getdate())
+    and fecha_venta >= dateadd(month, -{{ var('meses_lookback_incremental') }}, {{ fecha_corte_mes_cerrado() }})
     {% endif %}
 ),
 

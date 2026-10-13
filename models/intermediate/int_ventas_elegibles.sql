@@ -36,6 +36,11 @@
 -- la tabla, no en un TRUNCATE+INSERT sobre una que ya existe) SQL Server
 -- intenta convertir ESTE lado a ese tipo por precedencia, y explota con
 -- cualquier producto_id no numérico o fuera de rango de int.
+--
+-- medio_pago pasa sin tocar desde stg_ventas -- ver ese modelo para el
+-- porqué. Sigue siendo un atributo de línea acá: int_ventas_12m e
+-- int_ventas_12m_tabla la heredan solos porque hacen `select *` sobre
+-- este modelo, no hace falta tocarlos.
 
 select
     v.cliente_id,
@@ -45,6 +50,7 @@ select
     v.fecha_venta,
     v.venta_gs,
     v.unidades,
+    v.medio_pago,
     -- ticket_id: mismo criterio que view_ventas_ahorrazo_filtradas_12m y
     -- top_300_productos.ipynb (ahí "ticked_id", typo heredado -- acá
     -- corregido a ticket_id, mismo criterio de construcción).

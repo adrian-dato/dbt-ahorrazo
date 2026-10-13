@@ -16,8 +16,9 @@ models:
   - name: int_clientes_mapeo_limpio
     description: >
       Reemplaza dbo.clientes_mapeo (proceso legacy clientes_mapeo_limpio.sql).
-      Incremental, lookback de {{ var('dias_lookback_incremental') }} días
-      para detectar cliente_id nuevos en Ventas_Ahorrazo. Excluye clientes
+      Incremental: para detectar cliente_id nuevos en Ventas_Ahorrazo
+      revisa los últimos {{ var('meses_lookback_incremental') }} meses
+      cerrados más el mes en curso. Excluye clientes
       no identificables (cliente_id sin ningún dígito) -- no aparecen en
       esta tabla ni con cliente_id_limpio NULL. Fase 2 confirmada:
       stg_clientes_mapeo repunta acá (ya no a dbo.clientes_mapeo), así que
@@ -98,6 +99,11 @@ models:
                 values:
                   - 'Fisico'
                   - 'Juridico'
+      - name: medio_pago
+        description: >
+          Pasa sin tocar desde stg_ventas -- ver ese modelo para el
+          detalle (34 valores, atributo de línea, no se resuelve a nivel
+          de ticket).
 
   - name: int_ventas_12m
     description: >
@@ -142,6 +148,12 @@ models:
       - name: ticket_id
         tests:
           - not_null
+      - name: medio_pago
+        description: >
+          Pasa sin tocar desde int_ventas_elegibles -- 34 valores, 401
+          filas en NULL sobre 238M+ en la fuente. Es la columna que
+          expone la tabla Ventas del tablero de Power BI para poder
+          filtrar por medio de pago.
 
   - name: int_ventas_24m_tabla
     description: >

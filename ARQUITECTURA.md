@@ -336,7 +336,7 @@ lógica de retry/email.
 
 | DAG | Qué corre | Horario (UTC) | Por qué ese horario |
 |---|---|---|---|
-| `dbt_ahorrazo_mensual` | `+tag:mayoristas` y `fct_ventas_agrupadas_24m` | Día 1, 02:00 | Más margen: Mayoristas es el más nuevo y su tiempo de corrida varía |
+| `dbt_ahorrazo_mensual` | `+tag:mayoristas`, `fct_ventas_agrupadas_24m` e `int_ventas_24m_tabla` | Día 1, 02:00 | Más margen: Mayoristas es el más nuevo y su tiempo de corrida varía |
 | `dbt_ahorrazo_semanal` | `dim_cliente_tipo_migracion` + su snapshot, `top300_ranking` | Lunes, 04:00 | `dbt build` completo mide ~1h30 (dato real) |
 | `dbt_ahorrazo_diario` | `dbt test --select assert_ventas_actualizada_mes_cerrado` | Todos los días, 05:30 | Liviano, corre en segundos |
 

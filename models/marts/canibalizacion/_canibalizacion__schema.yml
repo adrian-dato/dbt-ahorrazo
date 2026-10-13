@@ -5,8 +5,8 @@ models:
     description: >
       Reemplaza proc_1_36m.sql. Ventas agrupadas por cliente/producto/pdv/
       año/mes de los últimos {{ var('meses_ventana_canibalizacion') }} meses.
-      Incremental (delete+insert), lookback de
-      {{ var('dias_lookback_incremental') }} días en corridas normales.
+      Incremental (delete+insert); en corridas normales reprocesa los
+      últimos {{ var('meses_lookback_incremental') }} meses cerrados completos.
     columns:
       - name: cliente_id_limpio
         description: Identificador de cliente normalizado.

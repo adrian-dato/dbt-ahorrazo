@@ -18,6 +18,11 @@
 -- de tipos) y explota en cualquier fila con letras o números grandes,
 -- aunque esa fila nunca fuera a matchear nada. Mismo criterio que ya
 -- usa el legacy (CAST(producto_id AS varchar(100)) en varios scripts).
+--
+-- medio_pago: ya estaba declarada en _staging__sources.yml pero nunca se
+-- había seleccionado -- pedido explícito del equipo para exponerla en el
+-- análisis. Es un atributo de línea/venta (igual que venta_gs o
+-- unidades), no se resuelve ni se agrega acá.
 select
     cliente_id,
     cast(producto_id as varchar(100)) as producto_id,
@@ -26,6 +31,7 @@ select
     venta_gs,
     unidades,
     timbrado,
-    factura_nro
+    factura_nro,
+    medio_pago
 from {{ source('dato_solutions', 'Ventas_Ahorrazo') }}
 where cliente_id is not null

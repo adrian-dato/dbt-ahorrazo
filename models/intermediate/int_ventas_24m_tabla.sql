@@ -30,9 +30,10 @@
 -- CUÁNTO CUESTA. Es aproximadamente el doble de filas que la de 12 meses
 -- (esa ronda los 62 millones) y recorre la fact de 238M+ filas el doble
 -- de lejos hacia atrás. No está tagueada y ningún modelo le hace ref, así
--- que ningún DAG la construye sola: solo se materializa cuando se la
--- selecciona a propósito. Conviene correrla fuera de la ventana horaria
--- de los DAGs pesados.
+-- que ningún selector por tag o por ancestro la alcanza: la construye una
+-- tarea propia del DAG mensual (build_ventas_24m.py en
+-- orquestacion_ahorrazo), después de la cadena de mayoristas. Mensual
+-- alcanza porque con meses cerrados la ventana solo cambia el día 1.
 --
 -- OJO AL COMPARAR SUCURSALES EN EL PRIMER MES DE LA VENTANA. Ruta 2
 -- (pdv_id = 6) abrió en septiembre de 2024, que es justo donde arranca la

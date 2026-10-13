@@ -85,6 +85,17 @@ models:
         data_type: varchar(255)
       - name: factura_nro
         data_type: varchar(255)
+      - name: medio_pago
+        data_type: varchar(255)
+        description: >
+          Cómo pagó esa línea (Efectivo, Tarjeta de crédito, Ueno-Tarjeta,
+          Cobro QR Dinelco, etc. -- 34 valores distintos en la fuente, 401
+          filas en NULL sobre 238M+). Atributo de línea, igual que
+          venta_gs o unidades -- no se resuelve a nivel de ticket acá.
+          Verificado contra datos reales: solo 1 ticket de 5,2M (últimos
+          13 meses) tiene más de un medio_pago entre sus líneas, así que
+          no hace falta una regla de resolución para exponerla a nivel de
+          factura si algún consumidor lo necesitara más adelante.
 
   - name: stg_clientes_limpio
     description: Dimensión por cliente_id_limpio. Repunta a int_clientes_limpio desde la Fase 2 (confirmada) -- ya no lee de dbo.clientes_limpio. Mismo motivo de mantener nombre/columnas que stg_clientes_mapeo.

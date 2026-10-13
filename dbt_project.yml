@@ -24,7 +24,12 @@ clean-targets:
 vars:
   # Canibalización — coincide con @meses = 36 en proc_1_36m.sql (legacy)
   meses_ventana_canibalizacion: 36
-  dias_lookback_incremental: 45
+  # Cuántos meses cerrados completos reprocesa una corrida incremental
+  # (fct_ventas_36m, int_clientes_mapeo_limpio). En meses y no en días:
+  # un lookback en días corta a mitad de mes, y como fct_ventas_36m
+  # agrupa por mes, delete+insert pisaba el mes completo con una suma
+  # parcial.
+  meses_lookback_incremental: 2
 
   # Compartida entre Top 300 y Mayoristas -- los 2 proyectos que hoy
   # dependen de la misma ventana (view_ventas_ahorrazo_filtradas_12m en

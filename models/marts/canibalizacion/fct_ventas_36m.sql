@@ -3,8 +3,8 @@
 -- Diferencias clave respecto al procedimiento original:
 --   - Incremental (delete+insert por partición cliente/producto/pdv/año/mes)
 --     en vez de TRUNCATE + INSERT completo: la corrida normal solo
---     reprocesa los últimos `dias_lookback_incremental` días, no los 36
---     meses enteros. El full-scan completo solo ocurre con --full-refresh.
+--     reprocesa los últimos `meses_lookback_incremental` meses cerrados,
+--     no los 36 enteros. El full-scan completo solo ocurre con --full-refresh.
 --   - dbt materializa en una tabla nueva y hace el swap al final: la
 --     ventana de bloqueo para lectores concurrentes pasa de "toda la
 --     corrida" a segundos.
@@ -21,9 +21,13 @@
 -- Ventana en MESES CERRADOS (corregido -- antes usaba getdate() directo
 -- como límite superior, mezclando el mes en curso, parcial, con meses ya
 -- cerrados). Mismo criterio que int_ventas_12m/fecha_corte_mes_cerrado().
--- El lookback de abajo (dias_lookback_incremental) es un mecanismo
--- distinto -- cuánto reprocesar para capturar datos que llegan tarde --,
--- no la ventana de reporte en sí, y sigue usando getdate() a propósito.
+--
+-- El lookback incremental arranca el día 1 de un mes, nunca a mitad. La
+-- clave agrupa por mes, y delete+insert reemplaza la fila entera de esa
+-- clave: con un lookback en días (antes 45) la suma recalculada cubría
+-- solo el tramo final del mes más viejo y pisaba el total real de ese mes
+-- con un monto parcial. Reprocesar meses completos hace que cada fila
+-- reemplazada tenga el mes entero.
 
 {{
     config(
@@ -39,9 +43,9 @@ with ventas as (
     where fecha_venta >= dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})
       and fecha_venta <  {{ fecha_corte_mes_cerrado() }}
       {% if is_incremental() %}
-      -- Lookback: cubre datos que llegan tarde al mes en curso o al
-      -- anterior, sin reprocesar los 36 meses completos en cada corrida.
-      and fecha_venta >= dateadd(day, -{{ var('dias_lookback_incremental') }}, getdate())
+      -- Lookback: los últimos meses cerrados completos, para capturar
+      -- ventas que llegan tarde sin reprocesar los 36 meses.
+      and fecha_venta >= dateadd(month, -{{ var('meses_lookback_incremental') }}, {{ fecha_corte_mes_cerrado() }})
       {% endif %}
 )
 
