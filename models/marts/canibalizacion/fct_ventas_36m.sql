@@ -28,12 +28,23 @@
 -- solo el tramo final del mes más viejo y pisaba el total real de ese mes
 -- con un monto parcial. Reprocesar meses completos hace que cada fila
 -- reemplazada tenga el mes entero.
+--
+-- La ventana de 36 meses se mantiene con el post_hook de abajo, que borra
+-- todo mes anterior al inicio de la ventana. Una corrida incremental solo
+-- reemplaza el lookback y no toca el resto, así que sin el hook los meses
+-- que salen de la ventana se quedaban y la tabla crecía un mes por mes.
+-- El borrado se define por el calendario (primer día del mes en curso
+-- menos 36 meses) y no por "quitar el mes más viejo": es idempotente.
+-- Correrlo una vez o diez, o hacer una corrida manual cualquier día del
+-- mismo mes, borra exactamente lo mismo, y el inicio de la ventana solo
+-- se mueve cuando cambia el mes del calendario.
 
 {{
     config(
         materialized='incremental',
         unique_key=['cliente_id_limpio', 'producto_id', 'pdv_id', 'anio', 'mes'],
-        incremental_strategy='delete+insert'
+        incremental_strategy='delete+insert',
+        post_hook="delete from {{ this }} where datefromparts(anio, mes, 1) < dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})"
     )
 }}
 
