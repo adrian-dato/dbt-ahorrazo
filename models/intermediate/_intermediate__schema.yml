@@ -67,6 +67,69 @@ models:
           - not_null
           - unique
       - name: categoria_4_limpio
+        description: >
+          No sirve como identificador de categoría: mezcla los nombres de
+          categoria_4 con los de categoria_3 donde esa falta. Para agrupar
+          por categoría usar categoria_key_n1 a categoria_key_n4.
+        tests:
+          - not_null
+      - name: categoria_key_n1
+        description: Clave de la categoría de nivel 1 del producto (ver int_categorias).
+        tests:
+          - not_null
+      - name: categoria_key_n2
+        description: Clave de la categoría de nivel 2 del producto, por ruta completa.
+        tests:
+          - not_null
+      - name: categoria_key_n3
+        description: Clave de la categoría de nivel 3 del producto, por ruta completa.
+        tests:
+          - not_null
+      - name: categoria_key_n4
+        description: >
+          Clave de la categoría de nivel 4 del producto, por ruta completa.
+          Un producto sin categoria_4 queda en un nodo '(sin asignar)' bajo
+          su categoría de nivel 3.
+        tests:
+          - not_null
+
+  - name: int_categorias
+    description: >
+      Las categorías de producto con un código único por categoría, una
+      fila por categoría de cada nivel (1 a 4). El nombre de una categoría
+      no la identifica: 'Dama' está bajo 81 categoria_3 distintas, y 8
+      nombres de categoria_2, 99 de categoria_3 y 324 de categoria_4 se
+      repiten bajo más de un padre. categoria_key es el hash de la ruta
+      completa, así que dos categorías con el mismo nombre y distinto
+      padre tienen claves distintas. Es el árbol que usa el forecast por
+      categoría. Ver macros/clave_categoria.sql.
+    columns:
+      - name: categoria_key
+        description: >
+          Código de la categoría: nivel y 12 caracteres hexadecimales del
+          hash de la ruta, por ejemplo N3-9F2A41C07B3D.
+        tests:
+          - not_null
+          - unique
+      - name: nivel
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
+      - name: categoria_padre_key
+        description: Vacía en el nivel 1. En los demás, la clave de la categoría del nivel anterior.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('int_categorias')
+                field: categoria_key
+      - name: ruta
+        description: La ruta legible, por ejemplo 'Tienda > Ropa > Remeras > Dama'.
+        tests:
+          - not_null
+      - name: cant_productos
         tests:
           - not_null
 

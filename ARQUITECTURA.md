@@ -118,6 +118,8 @@ graph TD
         INT_NORM[int_clientes_normalizados<br/>view]
         INT_MAPEO[int_clientes_mapeo_limpio<br/>incremental, el más pesado]
         INT_LIMPIO[int_clientes_limpio<br/>table]
+        INT_PROD[int_productos_limpio<br/>table]
+        INT_CAT[int_categorias<br/>table]
         INT_ELEG[int_ventas_elegibles<br/>view]
         INT_12M[int_ventas_12m<br/>view]
         INT_12M_T[int_ventas_12m_tabla<br/>table]
@@ -134,10 +136,13 @@ graph TD
     INT_MAPEO --> STG_MAPEO
     INT_LIMPIO --> STG_LIMPIO
 
+    STG_PROD --> INT_PROD
+    SEED_EXCL --> INT_PROD
+    INT_PROD --> INT_CAT
+
     STG_VENTAS --> INT_ELEG
     STG_MAPEO --> INT_ELEG
-    STG_PROD --> INT_ELEG
-    SEED_EXCL --> INT_ELEG
+    INT_PROD --> INT_ELEG
 
     INT_ELEG --> INT_12M
 ```
@@ -146,6 +151,23 @@ graph TD
 venta válida para análisis" (empresa=3, exclusión de categorías
 bolsa/egre/servi, cliente de test, productos de `productos_excluidos`):
 la consumen directo o indirecto los 3 proyectos.
+
+**`int_productos_limpio`** es el catálogo de productos elegibles (empresa 3, sin
+bolsas, egresos, servicios, activos, insumos ni los productos de
+`productos_excluidos`), con las categorías ya resueltas. `int_ventas_elegibles`
+une contra él en lugar de repetir el filtro. Trae además una clave por categoría
+en cada uno de los cuatro niveles.
+
+**`int_categorias`** es la tabla de esas claves: una fila por categoría de cada
+nivel, con la clave de su padre y su ruta legible. Existe porque el nombre de una
+categoría no la identifica. "Dama" aparece bajo 81 categorías de nivel 3
+distintas, y 8 nombres de nivel 2, 99 de nivel 3 y 324 de nivel 4 se repiten bajo
+más de un padre. La clave es el hash de la ruta completa desde la raíz, así que
+dos categorías con el mismo nombre y distinto padre tienen claves distintas, y
+una categoría nueva no mueve las existentes. Un nivel sin valor es un nodo
+`(sin asignar)` bajo su padre, de modo que todo producto tiene clave en los
+cuatro niveles. Ningún DAG la reconstruye todavía: hay que correrla después de
+`int_productos_limpio` cuando el catálogo gane categorías nuevas.
 
 **`int_ventas_12m`** es la ventana móvil de 12 meses (meses cerrados)
 compartida entre Top 300 y Mayoristas. No existía como pieza separada
@@ -171,8 +193,9 @@ Power BI. Materializarla además baja de ocho recorridos de la cadena sobre
    `--full-refresh`**, el cuello de botella real del proyecto) e
    `int_clientes_limpio`, en paralelo entre sí.
 5. `stg_clientes_mapeo` y `stg_clientes_limpio`, en paralelo entre sí.
-6. `int_ventas_elegibles` (necesita `stg_ventas` + `stg_clientes_mapeo` +
-   `stg_productos` + seed `productos_excluidos`).
+6. `int_productos_limpio` (necesita `stg_productos` + seed `productos_excluidos`)
+   e `int_categorias` encima. Después `int_ventas_elegibles` (necesita
+   `stg_ventas` + `stg_clientes_mapeo` + `int_productos_limpio`).
 7. `int_ventas_12m` y, encima, `int_ventas_12m_tabla`. Esta última es
    la que consumen los marts.
 
