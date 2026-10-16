@@ -245,6 +245,35 @@ graph TD
 dbt build --select +fct_canibalizacion_migracion_resumen
 ```
 
+### Ventas diarias por categoría
+
+`fct_ventas_diarias_categoria_36m` es la venta diaria por sucursal y categoría de
+nivel 4, sobre la ventana de 36 meses cerrados de Canibalización. No sale de
+`fct_ventas_36m`, que está agregada por mes: lee `int_ventas_elegibles`, la venta
+válida del proyecto, y toma de `int_productos_limpio` la clave de categoría de cada
+producto. Trae la clave de los cuatro niveles, así que la jerarquía completa está
+en cada fila. `int_categorias` es la tabla donde se leen los nombres.
+
+```mermaid
+graph TD
+    STG_VENTAS[stg_ventas] --> INT_ELEG[int_ventas_elegibles<br/>view]
+    STG_MAPEO[stg_clientes_mapeo] --> INT_ELEG
+    STG_PROD[stg_productos] --> INT_PROD[int_productos_limpio<br/>table, trae las claves]
+    SEED_EXCL[productos_excluidos] --> INT_PROD
+    INT_PROD --> INT_ELEG
+    INT_PROD --> INT_CAT[int_categorias<br/>table, nombre y ruta]
+    INT_ELEG --> FCT[fct_ventas_diarias_categoria_36m<br/>incremental]
+    INT_PROD --> FCT
+```
+
+### Orden de ejecución
+```
+dbt build --select +fct_ventas_diarias_categoria_36m int_categorias
+```
+`int_categorias` va explícita porque la tabla diaria no la referencia y el `+` no
+la alcanza. El `post_hook` borra los días que salen de la ventana, con el mismo
+corte por calendario que `fct_ventas_36m`.
+
 ---
 
 ## Top 300 Productos

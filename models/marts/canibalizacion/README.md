@@ -40,6 +40,55 @@ saca activos, insumos y la lista de `productos_excluidos`. Y `tipo_persona` sale
 de la macro compartida en lugar de la heurística que traía el script. El motivo
 de cada uno está en el comentario de cabecera del modelo.
 
+## `fct_ventas_diarias_categoria_36m`
+
+La venta diaria por sucursal y categoría de producto, sobre la misma ventana de 36
+meses cerrados que usa `fct_ventas_36m`. Una fila por día, sucursal y categoría de
+nivel 4, con `venta_gs` y `lineas`.
+
+No sale de `fct_ventas_36m`, que ya viene agregada por mes y no deja bajar a día.
+Lee `int_ventas_elegibles`, que es la definición única de venta válida del
+proyecto, de modo que hereda sus exclusiones y el mapeo de clientes sin repetir
+ninguna regla. La clave de categoría de cada producto la toma de
+`int_productos_limpio`, y `int_categorias` es la tabla donde se leen sus nombres.
+
+El nombre de una categoría no la identifica: "Dama" aparece bajo 81 categorías de
+nivel 3 distintas, y 8 nombres de nivel 2, 99 de nivel 3 y 324 de nivel 4 se
+repiten bajo más de un padre. Por eso la tabla no guarda `categoria_4_limpio` sino
+`categoria_key_n4`, que es esa misma categoría identificada por su ruta completa.
+Cada fila trae también la clave de los niveles 1, 2 y 3, así que la jerarquía
+completa está en la fila: para subir de nivel alcanza con agrupar por otra
+columna. Un producto sin `categoria_4` queda en un nodo `(sin asignar)` bajo su
+categoría de nivel 3.
+
+Los nombres no se repiten en cada fila. Se leen uniendo la clave con
+`int_categorias`, y la sucursal uniendo `pdv_id` con el seed `dim_sucursal_mapeo`:
+
+```sql
+select
+    datefromparts(year(f.fecha_venta), month(f.fecha_venta), 1) as mes,
+    c.ruta,
+    sum(f.venta_gs) as venta_gs
+from marts_canibalizacion.fct_ventas_diarias_categoria_36m f
+join intermediate.int_categorias c
+    on c.categoria_key = f.categoria_key_n2
+group by datefromparts(year(f.fecha_venta), month(f.fecha_venta), 1), c.ruta
+order by mes, venta_gs desc;
+```
+
+Las medidas son `venta_gs` y `lineas`, las dos sumables entre niveles. Las
+unidades quedaron afuera porque una categoría mezcla kilos, litros y unidades
+sueltas, y los tickets y los clientes distintos porque se contarían dos veces al
+subir de nivel. Las devoluciones entran con signo negativo.
+
+Es incremental, igual que `fct_ventas_36m`: una corrida normal reprocesa los
+últimos dos meses cerrados completos y un `--full-refresh` reconstruye los 36. Un
+`post_hook` borra los días que salen de la ventana. El corte se define por el
+calendario y no por quitar el mes más viejo, así que una corrida manual cualquier
+día del mes borra lo mismo que la programada. La categoría que usa cada producto
+es la actual del catálogo: si el cliente recategorizó productos, esa venta
+histórica pasa a la categoría nueva. Ningún DAG la construye todavía.
+
 ## Nota sobre las variables
 
 La ventana de este proyecto se llama `meses_ventana_canibalizacion` y no
