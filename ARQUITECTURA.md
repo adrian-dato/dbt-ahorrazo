@@ -71,10 +71,10 @@ fija materialización: cada modelo declara la suya. `int_clientes_limpio` es una
 dimensión chica que se une contra la fact, y como tabla evita repetir ese trabajo
 en cada consumidor. `int_clientes_mapeo_limpio` y `fct_ventas_36m` son
 incrementales, porque reconstruirlos enteros lleva entre 47 y 67 minutos y solo
-cambian las filas recientes. `int_ventas_12m` es una vista liviana sobre un
-modelo que ya hizo el trabajo pesado, e `int_ventas_12m_tabla` es esa misma vista
-materializada, por un motivo distinto: la ventana de la vista se mueve con el calendario y las
-tablas que la consumen no, así que materializarla las mantiene alineadas.
+cambian las filas recientes. `int_ventas_12m_tabla` es tabla por un motivo
+distinto: su ventana sale del calendario, y una vista se movería sola mientras
+las tablas que la consumen quedan congeladas en su última corrida, así que
+materializarla las mantiene alineadas.
 
 ### Por qué existe `staging` y no se va directo a `intermediate`
 
@@ -121,7 +121,6 @@ graph TD
         INT_PROD[int_productos_limpio<br/>table]
         INT_CAT[int_categorias<br/>table]
         INT_ELEG[int_ventas_elegibles<br/>view]
-        INT_12M[int_ventas_12m<br/>view]
         INT_12M_T[int_ventas_12m_tabla<br/>table]
     end
 
@@ -144,7 +143,7 @@ graph TD
     STG_MAPEO --> INT_ELEG
     INT_PROD --> INT_ELEG
 
-    INT_ELEG --> INT_12M
+    INT_ELEG --> INT_12M_T
 ```
 
 **`int_ventas_elegibles`** es la única fuente de verdad de "qué es una
@@ -169,20 +168,20 @@ una categoría nueva no mueve las existentes. Un nivel sin valor es un nodo
 cuatro niveles. Ningún DAG la reconstruye todavía: hay que correrla después de
 `int_productos_limpio` cuando el catálogo gane categorías nuevas.
 
-**`int_ventas_12m`** es la ventana móvil de 12 meses (meses cerrados)
-compartida entre Top 300 y Mayoristas. No existía como pieza separada
-en el diseño original, se extrajo al detectar que los dos la
-recalculaban por separado.
+**`int_ventas_12m_tabla`** es la ventana móvil de 12 meses cerrados a grano de
+línea, compartida entre Top 300 y Mayoristas, y es lo que consumen los marts y el
+tablero de Power BI. Es tabla y no vista porque una vista recalcularía la ventana
+contra `getdate()` en cada consulta: el primero de cada mes empezaría a devolver
+un período distinto sin que se haya corrido nada, y eso desalinearía las tablas de
+`marts_mayoristas`, que guardan la ventana del día en que se construyeron, contra
+la venta que ve Power BI. Materializarla además baja de ocho recorridos de la
+cadena sobre `dbo.Ventas_Ahorrazo` por corrida a uno solo. Lee
+`int_ventas_elegibles` directo y lista sus columnas: antes había una vista
+intermedia con `select *`, y las columnas nuevas no le llegaban hasta correr
+`sp_refreshview` a mano.
 
-**`int_ventas_12m_tabla`** son esas mismas filas materializadas, y es lo
-que consumen los marts y el tablero de Power BI. La vista sigue existiendo
-para consultas a mano, pero nadie la lee en producción: al ser vista,
-recalcula la ventana contra `getdate()` en cada consulta, así que el
-primero de cada mes empieza a devolver un período distinto sin que se haya
-corrido nada, y eso desalinea las tablas de `marts_mayoristas`, que
-guardan la ventana del día en que se construyeron, contra la venta que ve
-Power BI. Materializarla además baja de ocho recorridos de la cadena sobre
-`dbo.Ventas_Ahorrazo` por corrida a uno solo.
+**`int_ventas_24m_tabla`** es lo mismo con 24 meses, para comparar un año contra
+el anterior.
 
 ### Orden de ejecución de esta capa
 
@@ -196,8 +195,7 @@ Power BI. Materializarla además baja de ocho recorridos de la cadena sobre
 6. `int_productos_limpio` (necesita `stg_productos` + seed `productos_excluidos`)
    e `int_categorias` encima. Después `int_ventas_elegibles` (necesita
    `stg_ventas` + `stg_clientes_mapeo` + `int_productos_limpio`).
-7. `int_ventas_12m` y, encima, `int_ventas_12m_tabla`. Esta última es
-   la que consumen los marts.
+7. `int_ventas_12m_tabla`, que es la que consumen los marts.
 
 ---
 

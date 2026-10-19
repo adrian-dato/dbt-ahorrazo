@@ -41,20 +41,26 @@ padre, de modo que todo producto tiene clave en los cuatro niveles.
 `categoria_4_limpio` no sirve para esto: mezcla nombres de dos niveles en la
 misma columna.
 
-**`int_ventas_12m`** aplica la ventana móvil de doce meses cerrados sobre
-`int_ventas_elegibles`. Es una vista, así que su ventana se recalcula cada vez
-que alguien la consulta.
+**`int_ventas_12m_tabla`** es la venta de los últimos doce meses cerrados a grano
+de línea, materializada. La consumen los marts de Mayoristas y Top 300 y el
+tablero de Power BI, y es tabla por dos motivos. Congela la ventana entre
+corridas de dbt: una vista, al pasar de un mes al siguiente, empezaría a devolver
+otro período sin que nadie haya corrido nada, y eso dejaría las tablas de
+`marts_mayoristas` desalineadas contra la venta que ve Power BI. Y evita que cada
+consumidor vuelva a recorrer la cadena sobre `dbo.Ventas_Ahorrazo`, que tiene más
+de 238 millones de filas: son ocho recorridos por corrida contra uno solo.
 
-**`int_ventas_12m_tabla`** son esas mismas filas, materializadas. Es la que
-consumen los marts y el tablero de Power BI, por dos motivos. Congela la ventana
-entre corridas de dbt, cosa que la vista no puede hacer: al pasar de un mes al
-siguiente empieza a devolver otro período sin que nadie haya corrido nada, y eso
-deja las tablas de `marts_mayoristas` desalineadas contra la venta que ve Power
-BI. Y evita que cada consumidor vuelva a recorrer la cadena de vistas sobre
-`dbo.Ventas_Ahorrazo`, que tiene más de 238 millones de filas: son ocho recorridos
-por corrida contra uno solo.
+Lee `int_ventas_elegibles` directo, sin una vista en el medio, y lista sus
+columnas. Antes había una vista intermedia, `int_ventas_12m`, que hacía
+`select *`, y SQL Server guarda la lista de columnas de una vista cuando se crea:
+las columnas nuevas de `int_ventas_elegibles` no le llegaban hasta correr
+`sp_refreshview` a mano. Ahora, una columna nueva hay que agregarla en
+`int_ventas_12m_tabla` y en `int_ventas_24m_tabla`.
 
-La regla de la ventana vive únicamente en el macro `fecha_corte_mes_cerrado()`.
-`int_ventas_12m_tabla` lee la vista entera en lugar de repetir el filtro, así que
-si algún día cambia el criterio de meses cerrados, se cambia el macro y todo lo
-demás lo hereda.
+**`int_ventas_24m_tabla`** es lo mismo con veinticuatro meses, para las preguntas
+de tendencia que necesitan comparar un año contra el anterior.
+
+La regla de qué es un mes cerrado vive únicamente en el macro
+`fecha_corte_mes_cerrado()`. Cada tabla de ventas solo decide cuántos meses mira,
+así que si algún día cambia el criterio, se cambia el macro y todo lo demás lo
+hereda.

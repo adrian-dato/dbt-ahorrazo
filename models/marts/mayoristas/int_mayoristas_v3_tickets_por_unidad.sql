@@ -2,7 +2,7 @@
 -- para el cálculo de umbrales v3 (Q1/Q3 por unidad_medida en
 -- mayoristas_v3_tickets_unidad). Separado en su propio modelo (en vez de
 -- vivir como CTE ahí) para que el GROUP BY sobre las ~62M filas de
--- int_ventas_12m se calcule una sola vez -- mayoristas_v3_tickets_unidad
+-- int_ventas_12m_tabla se calcule una sola vez -- mayoristas_v3_tickets_unidad
 -- necesita leer este resultado 5 veces (una por unidad_medida para el
 -- umbral, más el join final), y sin materializarlo aparte cada
 -- referencia recalcularía la agregación completa desde cero.

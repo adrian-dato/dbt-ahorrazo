@@ -34,7 +34,7 @@ Los diagramas de dependencias y el orden de ejecución están en
 
 Corriendo en producción contra la base real: la capa de staging, la limpieza de
 clientes, las reglas de venta compartidas (`int_ventas_elegibles`,
-`int_ventas_12m`, `int_ventas_12m_tabla`) y los tres marts de negocio.
+`int_ventas_12m_tabla`) y los tres marts de negocio.
 
 **Clientes Mayoristas** clasifica a los clientes con la metodología v3, que mide
 cada unidad de medida contra su propia vara. La versión anterior se eliminó del

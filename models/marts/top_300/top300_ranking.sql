@@ -16,7 +16,7 @@
 --
 -- cast(producto_id as varchar(100)) explícito en los JOIN de acá abajo:
 -- aunque toda la cadena (stg_ventas -> int_ventas_elegibles ->
--- int_ventas_12m -> int_top300_kpis) ya castea producto_id a varchar,
+-- int_ventas_12m_tabla -> int_top300_kpis) ya castea producto_id a varchar,
 -- seguía apareciendo el mismo error de conversión a int (245/248) en
 -- este modelo puntual, con valores distintos cada vez ("1685-G",
 -- luego "ICN9695") -- señal de que la resolución de tipos implícita de

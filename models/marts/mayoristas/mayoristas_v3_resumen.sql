@@ -15,7 +15,7 @@
 -- ventas_totales se conserva como columna informativa, NO alimenta el
 -- puntaje. A diferencia de C1/C2, C3 es GLOBAL: entran TODAS las
 -- unidades de medida (incluidas Blis/Metros/Ramo, que no tienen C1/C2
--- propio pero sí venta) -- por eso lee directo de int_ventas_12m, no de
+-- propio pero sí venta) -- por eso lee directo de int_ventas_12m_tabla, no de
 -- mayoristas_v3_tickets_unidad (que filtra a propósito solo
 -- Unid/KILOS/LITROS/Pack).
 --

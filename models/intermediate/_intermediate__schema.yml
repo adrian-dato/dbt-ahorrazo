@@ -168,34 +168,17 @@ models:
           detalle (34 valores, atributo de línea, no se resuelve a nivel
           de ticket).
 
-  - name: int_ventas_12m
-    description: >
-      Ventana móvil de 12 meses sobre int_ventas_elegibles -- COMPARTIDA
-      entre Top 300 y Mayoristas (los 2 proyectos que dependen de la
-      misma ventana en el legacy, view_ventas_ahorrazo_filtradas_12m).
-      Rolling de verdad (calculado contra getdate(), no fechas fijas).
-      Es una VISTA, así que recalcula su ventana cada vez que se la
-      consulta: el primero de cada mes devuelve un período distinto sin
-      que nadie haya corrido nada. Ningún modelo ni el tablero la
-      consumen directo por eso -- todos leen int_ventas_12m_tabla. Queda
-      para consultas a mano.
-    columns:
-      - name: producto_id
-        tests:
-          - not_null
-
   - name: int_ventas_12m_tabla
     description: >
-      Las mismas filas que int_ventas_12m, materializadas. Es el modelo
-      que consumen los 7 modelos de Mayoristas y Top 300 y la tabla
-      Ventas del tablero de Power BI. Existe por dos motivos: congela la
-      ventana entre corridas de dbt (la vista se mueve sola con el
-      calendario, y eso desalineaba las tablas de marts_mayoristas contra
-      la venta), y evita que cada consumidor vuelva a recorrer la cadena
-      de vistas sobre dbo.Ventas_Ahorrazo (238M+ filas) -- de 8 recorridos
-      por corrida a uno solo. No repite el filtro de la ventana: lee la
-      vista entera, así la regla sigue viviendo solo en el macro
-      fecha_corte_mes_cerrado().
+      La venta de los últimos 12 meses cerrados a grano de línea,
+      materializada. La comparten Top 300 y Mayoristas (siete modelos) y es
+      la tabla Ventas del tablero de Power BI. Es una tabla y no una vista
+      por dos motivos: congela la ventana entre corridas de dbt (una vista
+      se movería sola con el calendario y desalinearía las tablas de
+      marts_mayoristas contra la venta), y evita que cada consumidor vuelva
+      a recorrer la cadena sobre dbo.Ventas_Ahorrazo (238M+ filas). Lee
+      int_ventas_elegibles directo y lista sus columnas: una columna nueva
+      en ese modelo hay que agregarla acá y en int_ventas_24m_tabla.
     columns:
       - name: cliente_id_limpio
         description: >

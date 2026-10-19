@@ -20,7 +20,7 @@
 --
 -- Ventana en MESES CERRADOS (corregido -- antes usaba getdate() directo
 -- como límite superior, mezclando el mes en curso, parcial, con meses ya
--- cerrados). Mismo criterio que int_ventas_12m/fecha_corte_mes_cerrado().
+-- cerrados). Mismo criterio que int_ventas_12m_tabla/fecha_corte_mes_cerrado().
 --
 -- El lookback incremental arranca el día 1 de un mes, nunca a mitad. La
 -- clave agrupa por mes, y delete+insert reemplaza la fila entera de esa

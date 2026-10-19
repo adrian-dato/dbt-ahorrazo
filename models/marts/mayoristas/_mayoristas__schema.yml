@@ -5,7 +5,7 @@ models:
     description: >
       Grano cliente_id_limpio x ticket_id x unidad_medida -- agregación
       base de mayoristas_v3_tickets_unidad, separada en su propio modelo
-      para que el GROUP BY sobre int_ventas_12m se calcule una sola vez
+      para que el GROUP BY sobre int_ventas_12m_tabla se calcule una sola vez
       (mayoristas_v3_tickets_unidad la lee 5 veces: 4 ramas de umbral por
       unidad_medida + el join final).
     columns:
@@ -268,7 +268,7 @@ models:
       segmentación, cruzable con nivel_mayorista. Grano
       cliente_id_limpio, una fila por cliente de mayoristas_v3_resumen
       (LEFT JOIN, así ninguno desaparece). Lee de
-      mayoristas_v3_tickets_unidad y no de int_ventas_12m: la brecha
+      mayoristas_v3_tickets_unidad y no de int_ventas_12m_tabla: la brecha
       medida es de 2.477 tickets sobre 4.681.477 (0,05%), tickets
       compuestos enteramente por Blis/Metros/Ramo, y para clasificar
       cada cuánto viene un cliente una visita es una visita sin

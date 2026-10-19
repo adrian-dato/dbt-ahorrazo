@@ -7,7 +7,7 @@
 -- mayorista sola los trata igual.
 --
 -- Lee de mayoristas_v3_tickets_unidad (8,0M filas ya materializadas) y
--- no de int_ventas_12m (62M): la diferencia entre las dos, medida
+-- no de int_ventas_12m_tabla (62M): la diferencia entre las dos, medida
 -- contra la base, es de 2.477 tickets sobre 4.681.477 -- un 0,05%.
 -- Esos son tickets compuestos ENTERAMENTE por Blis, Metros o Ramo, las
 -- tres unidades que v3 deja fuera de C1/C2. Para clasificar cada

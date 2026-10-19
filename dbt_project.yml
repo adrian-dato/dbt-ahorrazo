@@ -33,7 +33,7 @@ vars:
 
   # Compartida entre Top 300 y Mayoristas -- los 2 proyectos que hoy
   # dependen de la misma ventana (view_ventas_ahorrazo_filtradas_12m en
-  # el legacy). Ver models/intermediate/int_ventas_12m.sql -- un solo
+  # el legacy). Ver models/intermediate/int_ventas_12m_tabla.sql -- un solo
   # modelo, no una copia del filtro por proyecto.
   ventana_meses_12m: 12
 

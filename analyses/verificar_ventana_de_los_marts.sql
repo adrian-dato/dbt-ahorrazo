@@ -34,12 +34,14 @@ select 'mayoristas_v3_frecuencia_compra',
        min(primera_compra), max(ultima_compra), count(*)
 from marts_mayoristas.mayoristas_v3_frecuencia_compra
 
--- Y la de la vista, que se mueve sola con el calendario: si no coincide
--- con las de arriba, es que cambio el mes y todavia no se corrio dbt.
+-- Y la ventana que corresponde HOY segun el calendario, que se mueve sola:
+-- si no coincide con las de arriba, es que cambio el mes y todavia no se
+-- corrio dbt. El 12 es la variable ventana_meses_12m de dbt_project.yml.
 union all
-select 'int_ventas_12m (vista)',
-       min(fecha_venta), max(fecha_venta), null
-from intermediate.int_ventas_12m;
+select 'ventana de hoy segun el calendario',
+       dateadd(month, -12, datefromparts(year(getdate()), month(getdate()), 1)),
+       dateadd(day, -1, datefromparts(year(getdate()), month(getdate()), 1)),
+       null;
 
 
 -- 2. Cuanto se parten las facturas. visitas = dias distintos con compra,

@@ -19,13 +19,14 @@
 -- haría parecer que la venta se derrumbó -- que es exactamente el error
 -- que produce comparar tramos sin este cuidado.
 --
--- POR QUÉ APLICA EL FILTRO ACÁ Y NO LEE UNA VISTA. int_ventas_12m_tabla
--- lee int_ventas_12m porque esa vista ya existía y se usa para consultas
--- a mano. Acá no hay vista equivalente y no hace falta uno: la regla de
--- "hasta el mes cerrado" sigue viviendo en un solo lugar, el macro
--- fecha_corte_mes_cerrado(); lo único propio de este modelo es cuántos
--- meses mira. Si algún día cambia el criterio de mes cerrado, se cambia
--- el macro y los dos modelos lo heredan.
+-- LA REGLA DE LA VENTANA. Igual que int_ventas_12m_tabla, lee
+-- int_ventas_elegibles y aplica el filtro acá. La regla de "hasta el mes
+-- cerrado" vive en un solo lugar, el macro fecha_corte_mes_cerrado(); lo
+-- único propio de cada modelo es cuántos meses mira. Si algún día cambia el
+-- criterio de mes cerrado, se cambia el macro y los dos modelos lo heredan.
+--
+-- Las columnas se listan a propósito, igual que en la de 12 meses: si
+-- int_ventas_elegibles gana una, hay que agregarla en los dos modelos.
 --
 -- CUÁNTO CUESTA. Es aproximadamente el doble de filas que la de 12 meses
 -- (esa ronda los 62 millones) y recorre la fact de 238M+ filas el doble
@@ -42,7 +43,17 @@
 
 {{ config(materialized='table') }}
 
-select *
+select
+    cliente_id,
+    cliente_id_limpio,
+    producto_id,
+    pdv_id,
+    fecha_venta,
+    venta_gs,
+    unidades,
+    medio_pago,
+    ticket_id,
+    tipo_persona
 from {{ ref('int_ventas_elegibles') }}
 where fecha_venta >= dateadd(month, -{{ var('ventana_meses_24m') }}, {{ fecha_corte_mes_cerrado() }})
   and fecha_venta <  {{ fecha_corte_mes_cerrado() }}

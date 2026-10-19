@@ -38,9 +38,9 @@
 -- cualquier producto_id no numérico o fuera de rango de int.
 --
 -- medio_pago pasa sin tocar desde stg_ventas -- ver ese modelo para el
--- porqué. Sigue siendo un atributo de línea acá: int_ventas_12m e
--- int_ventas_12m_tabla la heredan solos porque hacen `select *` sobre
--- este modelo, no hace falta tocarlos.
+-- porqué. Sigue siendo un atributo de línea acá. int_ventas_12m_tabla e
+-- int_ventas_24m_tabla listan sus columnas a propósito, así que una columna
+-- nueva en este modelo no les llega sola: hay que agregarla en las dos.
 
 select
     v.cliente_id,
