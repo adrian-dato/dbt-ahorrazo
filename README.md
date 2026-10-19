@@ -79,10 +79,11 @@ local con `dbt debug` y `dbt parse`, y se reconstruye la imagen en el servidor.
 
 Los comandos de uso diario están en [`COMANDOS.md`](COMANDOS.md).
 
-Como `.env` y `profiles.yml` viven en la misma carpeta que el proyecto, copiar el
-repo entero a otro server alcanza para que dbt funcione ahí. Al correr desde
-Airflow, `DBT_PROFILES_DIR` se setea como variable de entorno de la tarea. Migrar
-esas credenciales a Airflow Connections queda como mejora pendiente.
+En local las credenciales salen del `.env`. Al correr desde Airflow, las tareas
+las toman de la conexión `dbt_ahorrazo_sqlserver` y se las pasan al contenedor de
+dbt como variables de entorno, así que la contraseña no vive en un archivo del
+servidor. `DBT_PROFILES_DIR` también se setea como variable de entorno de la
+tarea. Cómo se crea la conexión está en el README de `orquestacion_ahorrazo`.
 
 ## Convenciones de nombres
 
