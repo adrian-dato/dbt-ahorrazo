@@ -64,10 +64,10 @@ Probado de punta a punta con Python 3.12 y Git Bash, conectado por VPN al server
 2. `source .venv/Scripts/activate` (en Windows la carpeta es `Scripts/`) y
    `pip install -r requirements.txt`, que trae `dbt-core`, `dbt-sqlserver` y
    `pyodbc`.
-3. Copiar `profiles.yml.example` a `profiles.yml` y crear `.env` con
-   `DB_SERVER`, `DB_DATABASE`, `DB_USER` y `DB_PASSWORD`, los mismos nombres que
-   usa `conexion_bd.py` en los otros repos. Los dos archivos van en la raíz y ya
-   están en el `.gitignore`.
+3. Copiar `profiles.yml.example` a `profiles.yml` y `.env.example` a `.env`, y
+   completar en el `.env` `DB_SERVER`, `DB_DATABASE`, `DB_USER` y `DB_PASSWORD`,
+   los mismos nombres que usa `conexion_bd.py` en los otros repos. Los dos
+   archivos van en la raíz y ya están en el `.gitignore`.
 4. `profiles.yml` vive junto al proyecto y no en `~/.dbt/`, así que hay que
    apuntarle a dbt con `DBT_PROFILES_DIR`. `source activar.sh` activa el entorno,
    carga el `.env` y setea esa variable en un solo paso.

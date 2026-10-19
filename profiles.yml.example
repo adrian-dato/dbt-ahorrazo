@@ -1,0 +1,47 @@
+# Copiar a profiles.yml, en esta misma carpeta (ya está en el .gitignore).
+# No contiene secretos: server, usuario y contraseña se leen de variables de
+# entorno, las mismas que usa conexion_bd.py en los otros repos. Los valores
+# van en el .env (ver .env.example).
+#
+# profiles.yml vive junto al proyecto y no en ~/.dbt/, así que hay que
+# decirle a dbt dónde buscarlo: `source activar.sh` carga el .env y setea
+# DBT_PROFILES_DIR en un solo paso (ver README, "Setup local").
+#
+# Los dos targets apuntan a la misma base. Como generate_schema_name usa el
+# nombre de schema de cada modelo tal cual, el target no cambia dónde se
+# escribe: corrido con cualquiera de los dos, dbt escribe en los mismos
+# schemas (staging, intermediate, marts_*). Airflow corre dbt sin --target,
+# así que usa el que está marcado como default.
+
+dbt_ahorrazo:
+  target: dev
+  outputs:
+
+    dev:
+      type: sqlserver
+      driver: 'ODBC Driver 17 for SQL Server'
+      server: "{{ env_var('DB_SERVER') }}"
+      database: "{{ env_var('DB_DATABASE') }}"
+      schema: dbt_dev
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      port: 1433
+      threads: 4
+      # El server usa un certificado autofirmado (no emitido por una CA
+      # reconocida). Sin esto, dbt-sqlserver falla el handshake TLS
+      # ("certificate chain was issued by an authority that is not
+      # trusted"). trust_cert sigue encriptando el tráfico, solo deja de
+      # exigir que el certificado esté firmado por una CA.
+      trust_cert: true
+
+    prod:
+      type: sqlserver
+      driver: 'ODBC Driver 17 for SQL Server'
+      server: "{{ env_var('DB_SERVER') }}"
+      database: "{{ env_var('DB_DATABASE') }}"
+      schema: dbo
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      port: 1433
+      threads: 4
+      trust_cert: true
