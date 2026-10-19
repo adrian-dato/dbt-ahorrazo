@@ -73,6 +73,10 @@ Probado de punta a punta con Python 3.12 y Git Bash, conectado por VPN al server
    carga el `.env` y setea esa variable en un solo paso.
 5. `dbt debug` para confirmar la conexión.
 
+Las versiones de `requirements.txt` están fijadas, y son las mismas que instala la
+imagen Docker del servidor. Para actualizarlas se cambia el número, se prueba en
+local con `dbt debug` y `dbt parse`, y se reconstruye la imagen en el servidor.
+
 Los comandos de uso diario están en [`COMANDOS.md`](COMANDOS.md).
 
 Como `.env` y `profiles.yml` viven en la misma carpeta que el proyecto, copiar el

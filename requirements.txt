@@ -1,10 +1,18 @@
-# Instala dbt-core + el adapter de SQL Server (pyodbc incluido como
-# dependencia). Ver README.md ("Setup local") para el resto del setup
-# (venv, ODBC Driver 17, .env, profiles.yml).
+# Versiones fijadas: son las del entorno donde se desarrolla y se prueba.
+# Sin fijar, cada reconstrucción de la imagen Docker instalaba lo último
+# disponible, y una versión nueva de dbt podía entrar a producción sin que
+# nadie lo decidiera.
 #
-# Sin pinnear todavía a propósito: dbt-core y dbt-sqlserver tienen que
-# resolverse a versiones compatibles entre sí, más fácil dejar que pip
-# lo resuelva la primera vez. Una vez confirmado que `dbt debug` funciona,
-# correr `pip freeze > requirements.txt` para fijar las versiones reales
-# (mismo patrón que ya usan los otros repos del portfolio).
-dbt-sqlserver
+# Se fijan los cinco paquetes que definen el comportamiento de dbt contra SQL
+# Server. El resto de las dependencias las resuelve pip a partir de lo que
+# piden estos, que declaran sus propios rangos.
+#
+# Para actualizar: cambiar el número, probar en local con `dbt debug` y
+# `dbt parse`, y reconstruir la imagen del servidor (ver README, "Setup
+# local"). Para ver qué versiones tiene hoy la imagen del servidor:
+#   docker run --rm --entrypoint pip dbt-ahorrazo:latest freeze
+dbt-core==1.12.0
+dbt-sqlserver==1.11.0
+dbt-adapters==1.24.5
+dbt-common==1.38.0
+pyodbc==5.3.0
