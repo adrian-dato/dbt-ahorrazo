@@ -1,5 +1,8 @@
 -- Baja de los objetos de Mayoristas que ya no consume nadie.
 --
+-- Se corre a mano en un cliente SQL. No es un analysis de dbt: tiene DROP,
+-- y los analyses se pueden ejecutar con `dbt show`.
+--
 -- dbt no borra nada cuando se borra un modelo: deja de administrar el
 -- objeto y la tabla sigue ahi, congelada en su ultima corrida, cada dia
 -- mas vieja. Esto es esa limpieza, hecha a mano una sola vez.

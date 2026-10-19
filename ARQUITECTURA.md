@@ -325,7 +325,7 @@ dbt build --select +tag:mayoristas
 El tag está declarado a nivel carpeta en `dbt_project.yml`, así que cualquier
 modelo nuevo en `marts/mayoristas/` entra sin tocar el DAG. La versión anterior
 de la metodología se eliminó del repo; los objetos que dejó en la base se dan de
-baja con `analyses/limpiar_objetos_mayoristas_v2.sql`.
+baja con `scripts/mantenimiento/limpiar_objetos_mayoristas_v2.sql`.
 
 ---
 

@@ -142,6 +142,14 @@ Para una consulta de una sola vez que no amerita un archivo:
 dbt show --inline "select top 10 * from {{ ref('mayoristas_v3_umbrales') }}"
 ```
 
+## Scripts de mantenimiento
+
+`scripts/mantenimiento/` tiene SQL que cambia la base y se corre a mano en un
+cliente SQL, no con dbt. Está separado de `analyses/` a propósito: los analyses se
+pueden ejecutar con `dbt show`, y un archivo con `DROP` no debería poder correrse
+por accidente. dbt no borra nada cuando se saca un modelo del repo, así que cada
+vez que se elimina uno hay que dar de baja su tabla o vista acá.
+
 ## Tests
 
 ```bash

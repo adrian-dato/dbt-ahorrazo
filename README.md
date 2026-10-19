@@ -39,7 +39,7 @@ clientes, las reglas de venta compartidas (`int_ventas_elegibles`,
 **Clientes Mayoristas** clasifica a los clientes con la metodología v3, que mide
 cada unidad de medida contra su propia vara. La versión anterior se eliminó del
 repo cuando se hizo el cutover; los objetos que dejó en la base se dan de baja
-con `analyses/limpiar_objetos_mayoristas_v2.sql`.
+con `scripts/mantenimiento/limpiar_objetos_mayoristas_v2.sql`.
 
 **Top 300 Productos** publica `top300_ranking` semanalmente.
 

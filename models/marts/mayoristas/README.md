@@ -89,7 +89,7 @@ las unidades de todas las unidades de medida en un solo número, que es el error
 que la v3 corrige.
 
 Quedaron objetos huérfanos en la base que dbt ya no administra y que se dan de
-baja con `analyses/limpiar_objetos_mayoristas_v2.sql`. Uno merece atención:
+baja con `scripts/mantenimiento/limpiar_objetos_mayoristas_v2.sql`. Uno merece atención:
 `marts_mayoristas.mayoristas_v3_detalle_unidad`, de 774.619 filas, la escribía el
 notebook por pandas antes del port a dbt. Tiene las mismas nueve columnas en el
 mismo orden que `mayoristas_v3_metricas_unidad`, que es su reemplazo. Un tablero
