@@ -49,10 +49,11 @@ models:
     description: >
       Reemplaza _conditions() (canibalizacion_v1_usado.ipynb) -- clasifica
       cada cliente/mes según su patrón de compra/migración entre SL/R1/R2.
-      Corrige un bug real del legacy (ver comentario en el modelo): la
-      categoría "Cliente SL, R1 y R2" no chequeaba SL_acumulado. No
-      esperar que coincida 1:1 contra el legacy en esa categoría
-      puntual -- confirmar con negocio antes de Fase 6.
+      Corrige un bug real del proceso anterior (ver comentario en el
+      modelo): la categoría "Cliente SL, R1 y R2" no chequeaba
+      SL_acumulado. No esperar que coincida 1:1 contra el proceso anterior
+      en esa categoría puntual; sí debería coincidir la suma con "Cliente
+      Dual R1 y R2".
     columns:
       - name: cliente_id_limpio
         tests:

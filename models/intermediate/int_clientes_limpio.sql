@@ -5,21 +5,14 @@
 -- dimensión no depende de Ventas_Ahorrazo -- sale entera de Clientes,
 -- una tabla chica que no es la fuente del cuello de botella. Recalcularla
 -- completa en cada corrida y dejar que dbt haga el swap atómico es más
--- simple que mantener un incremental acá, y sigue eliminando el patrón
--- DROP+CREATE+sp_rename sin transacción visible del proceso legacy.
---
--- Nota: todavía NO reemplaza a stg_clientes_limpio -- corre en paralelo
--- al proceso legacy hasta validar (ver analyses/validar_clientes_mapeo_limpio.sql).
+-- simple que mantener un incremental acá, y evita el patrón
+-- DROP+CREATE+sp_rename sin transacción visible del proceso anterior.
 --
 -- tipo_persona: ver macros/clasificar_tipo_persona.sql para el detalle
 -- completo de la regla y por qué reemplaza al CASE hardcodeado de
--- view_ventas_ahorrazo_filtradas_12m. Misma macro que usa
--- int_ventas_elegibles -- 1 sola definición de la regla, 2 lugares
+-- view_ventas_ahorrazo_filtradas_12m, que ya está en desuso. Misma macro que
+-- usa int_ventas_elegibles -- 1 sola definición de la regla, 2 lugares
 -- donde conviene tener la columna materializada.
--- Es la regla vigente: el CASE legacy que esto reemplaza ya está en
--- desuso, así que se sacó el analysis que comparaba contra él
--- (validar_tipo_persona.sql) -- no queda ningún consumidor corriendo
--- todavía la versión anterior.
 
 {{ config(materialized='table') }}
 

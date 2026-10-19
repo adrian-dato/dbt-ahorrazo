@@ -27,10 +27,6 @@
 -- Primera corrida: inserta todo el estado actual como versión 1
 -- (dbt_valid_from = ahora, dbt_valid_to = NULL). La "historia" empieza a
 -- verse recién desde la SEGUNDA corrida en que algo cambie.
---
--- Primer uso de snapshots en este proyecto -- no probado todavía contra
--- dbt-sqlserver (adaptador comunitario, mismo riesgo ya conocido que con
--- contracts).
 
 {% snapshot dim_cliente_tipo_migracion_snapshot %}
 

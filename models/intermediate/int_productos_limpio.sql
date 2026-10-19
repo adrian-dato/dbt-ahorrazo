@@ -16,8 +16,8 @@
 -- categoria_4_limpio: cuando categoria_4 = 'sin asignar.' (placeholder
 -- real de la fuente, no NULL), usa categoria_3 como fallback -- ej.
 -- categoria_3='Mochila' + categoria_4='sin asignar.' ->
--- categoria_4_limpio='Mochila'. Confirmado con el usuario -- el
--- fallback es a categoria_3, no un default genérico. Se conserva
+-- categoria_4_limpio='Mochila'. El fallback es a categoria_3, no un
+-- default genérico. Se conserva
 -- categoria_4 sin tocar al lado, para poder auditar cuántas filas se
 -- completaron así.
 --

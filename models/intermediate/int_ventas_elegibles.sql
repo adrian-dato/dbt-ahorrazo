@@ -17,15 +17,11 @@
 -- View, sin materializar: cada mart consumidor define su propia ventana
 -- de fechas sobre este resultado, acá no se fija ninguna.
 --
--- Usa stg_clientes_mapeo, no int_clientes_mapeo_limpio directo: la
--- limpieza de clientes ya está validada y stg_clientes_mapeo repunta a
--- int_clientes_mapeo_limpio desde la Fase 2 (ya no es la fuente legacy).
--- Se mantiene el join a través del wrapper porque ahí ya están hechos
--- los casts a varchar(50) que este join necesita.
+-- Usa stg_clientes_mapeo, no int_clientes_mapeo_limpio directo: esa vista
+-- es la que tiene hechos los casts a varchar(50) que este join necesita.
 --
--- fct_ventas_36m (Canibalización) ya consume este modelo (migrado --
--- antes tenía su propia copia inline de estas mismas reglas). Efecto de
--- la migración: ahora también aplica la exclusión de
+-- fct_ventas_36m (Canibalización) consume este modelo en lugar de una copia
+-- propia de estas reglas. Por eso aplica también la exclusión de
 -- productos_excluidos, que antes solo corría para Top 300.
 --
 -- cast(producto_id as varchar(100)) explícito en el JOIN de acá abajo:

@@ -9,7 +9,7 @@
 -- reemplaza por NULL/IS NULL, el equivalente idiomático en SQL -- mismo
 -- comportamiento, sin necesidad del truco.
 --
--- BUG ENCONTRADO Y CORREGIDO respecto al legacy: la rama "compró en las
+-- BUG ENCONTRADO Y CORREGIDO respecto al proceso anterior: la rama "compró en las
 -- 3 sucursales" del notebook original dice
 --   elif row["R1_acumulado"] != 0 and row["R1_acumulado"] != 0 and row["R2_acumulado"] != 0:
 -- (chequea R1_acumulado DOS veces, nunca SL_acumulado -- típico
@@ -19,11 +19,10 @@
 -- value_counts() del notebook: "Cliente SL, R1 y R2" = 463.626 casos vs.
 -- "Cliente Dual R1 y R2" = apenas 1.302 -- desproporción que cuadra
 -- exactamente con este bug. Acá se corrige (chequea SL_acumulado
--- también). ES UNA DIFERENCIA INTENCIONAL respecto al legacy -- no
+-- también). ES UNA DIFERENCIA INTENCIONAL respecto al proceso anterior -- no
 -- esperar que el value_counts() coincida 1:1 en "Cliente SL, R1 y R2" /
 -- "Cliente Dual R1 y R2" al comparar; sí debería coincidir la suma de
--- ambas categorías. Confirmar con el equipo de negocio antes del
--- cutover (Fase 6) que corregir esto es lo que quieren -- no se asume.
+-- ambas categorías.
 --
 -- Los 16 tipo_cliente observados en el notebook real (value_counts())
 -- están todos cubiertos acá -- ver test accepted_values en el schema.yml.

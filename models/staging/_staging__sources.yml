@@ -11,25 +11,25 @@ version: 2
 # existían (clientes_mapeo, clientes_limpio, entre otras) las generaban
 # procesos legacy (stored procs, KNIME, scripts sueltos), no el
 # proveedor, y se reemplazaron por modelos de este proyecto: ninguna de
-# las dos queda declarada acá. clientes_limpio se dio de baja con
-# stg_clientes_limpio repuntando a int_clientes_limpio, y clientes_mapeo
-# con stg_clientes_mapeo repuntando a int_clientes_mapeo_limpio, los dos
-# desde la Fase 2 (confirmada). Los analyses que comparaban contra esas
-# dos tablas (validar_clientes_mapeo_limpio.sql, validar_tipo_persona.sql)
-# ya cumplieron su función y se eliminaron junto con la fuente.
+# las dos queda declarada acá. clientes_limpio lo reemplaza
+# int_clientes_limpio, y clientes_mapeo lo reemplaza
+# int_clientes_mapeo_limpio. Los analyses que comparaban contra esas dos
+# tablas ya cumplieron su función y se eliminaron junto con la fuente.
 
 sources:
   - name: dato_solutions
     schema: dbo
     description: >
-      Base replicada de producción provista por el cliente. Contención de
-      recursos con otros pipelines pesados (forecast) mitigada en Fase 0.5
-      vía Pool de Airflow.
+      Base replicada de producción provista por el cliente. Comparte
+      servidor con otros procesos pesados (el forecast de Stock), así que
+      los DAGs de Sales se serializan con un pool de Airflow para no
+      competir por los recursos.
     tables:
       - name: Ventas_Ahorrazo
         description: >
-          Fact de ventas transaccional, 238M+ filas. HEAP sin Columnstore
-          Index — fix candidato en Fase 0, independiente de dbt.
+          Fact de ventas transaccional, 238M+ filas. En el último
+          relevamiento era un HEAP sin Columnstore Index, así que una
+          consulta que no filtre bien recorre la tabla entera.
         # Alerta de frescura -- ya no usa `dbt source freshness` (umbral
         # relativo tipo "hace N días", no soporta un corte de calendario).
         # El chequeo real vive en tests/assert_ventas_actualizada_mes_cerrado.sql
@@ -55,10 +55,9 @@ sources:
         description: >
           Tabla cruda de clientes. Insumo de int_clientes_normalizados, que
           alimenta a su vez int_clientes_limpio e int_clientes_mapeo_limpio
-          -- reemplazan al stored proc legacy sp_refresh_clientes_mapeo_limpio
-          y a las tablas dbo.clientes_mapeo/dbo.clientes_limpio que
-          generaba (dadas de baja como source acá, ver
-          stg_clientes_mapeo/stg_clientes_limpio).
+          -- reemplazan al stored proc sp_refresh_clientes_mapeo_limpio y a
+          las tablas dbo.clientes_mapeo/dbo.clientes_limpio que generaba,
+          que ya no se declaran como source.
         columns:
           - name: cliente_id
           - name: ci_ruc

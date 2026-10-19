@@ -1,7 +1,7 @@
 -- Reemplaza clientes_mapeo_limpio.sql (sp_refresh_clientes_mapeo_limpio),
 -- pasos A+B+C: construcción del mapeo cliente_id -> cliente_id_limpio.
 --
--- Diferencias clave respecto al proceso legacy:
+-- Diferencias clave respecto al proceso anterior:
 --   - Ya no vive dentro de una única transacción de ~1h+ (BEGIN TRAN sin
 --     COMMIT hasta el final) que bloquea clientes_mapeo/clientes_limpio
 --     -- y por lo tanto a los 3 proyectos que las consumen -- durante
@@ -32,7 +32,7 @@
 -- unique_key = cliente_id: 1 fila por cliente_id, igual que el índice
 -- único CX_clientes_mapeo_cliente_id del proceso legacy.
 --
--- Diferencias INTENCIONALES respecto al legacy (encontradas perfilando
+-- Diferencias INTENCIONALES respecto al proceso anterior (encontradas perfilando
 -- datos reales, ver derivar_cliente_id_limpio y recortar_basura_extremos):
 --   - Símbolos sueltos al principio/final del id (ej. '|') se sacan --
 --     el legacy prometía esto en un comentario pero nunca lo hacía.
@@ -42,17 +42,13 @@
 --     nombre de persona) se EXCLUYEN -- el legacy los dejaba adentro
 --     usando el nombre como si fuera un id, mezclando clientes distintos
 --     que comparten el mismo nombre/placeholder.
--- Por esto NO se esperaba cero diferencias contra dbo.clientes_mapeo al
--- validar (analysis ya eliminado, cumplió su función): conteo_solo_nuevo=0
--- (sin contar los ~5985 clientes nuevos acumulados por el atraso del
--- legacy), conteo_solo_legacy=267 (los no identificables que acá se
--- excluyen a propósito) y conteo_valor_distinto=16 (símbolos sueltos o
--- separadores no estándar que acá quedan bien limpios) -- confirmado
--- con el usuario, ver commit "Fase 2 confirmada".
---
--- Nota: todavía NO reemplaza a stg_clientes_mapeo -- corre en paralelo
--- al proceso legacy hasta validar que las diferencias que aparecen son
--- las esperadas, antes de que cualquier mart lo consuma.
+-- Por esto el resultado no coincide exactamente con el de
+-- dbo.clientes_mapeo, y la comparación contra la base real dio: ningún
+-- cliente que existiera solo acá (sin contar los ~5985 clientes nuevos que
+-- el proceso anterior no llegó a mapear por estar atrasado), 267 que
+-- existían solo en el anterior (los no identificables, que acá se excluyen
+-- a propósito) y 16 con un valor limpio distinto (símbolos sueltos o
+-- separadores no estándar que acá quedan bien limpios).
 
 {{
     config(
