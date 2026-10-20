@@ -50,19 +50,26 @@ sin cambios:
   de 2024) para Canibalización y para la venta diaria por categoría.
 - **Puntos de venta.** Trae cinco (1, 2, 3, 5 y 6) y la anterior tres (3, 5 y 6). Los puntos 1
   y 2 suman 31,4 millones de filas, el 17% de la tabla, y no se sabe qué son. En los meses que
-  están en las dos tablas, a partir de octubre de 2024, la nueva tiene entre 17% y 30% más
-  filas y entre 15% y 23% más venta que la anterior, lo cual es coherente con esos dos
-  puntos pero no está comprobado. En julio de 2026 trae 172.014 clientes contra 138.652.
+  están en las dos tablas, de octubre de 2024 a julio de 2026, la nueva tiene entre 24% y 37%
+  más filas (mediana 31%) y entre 16% y 28% más venta (mediana 23%), sin contar agosto y
+  septiembre de 2025. Los puntos 1 y 2 aportan unas 1,2 millones de filas por mes de las 1,65
+  millones de diferencia, o sea cerca de tres cuartos; el resto no está explicado. En julio
+  de 2026 trae 172.014 clientes contra 138.652 y 52.012 productos contra 40.469, con casi las
+  mismas líneas por factura (11,6 contra 11,9), lo que habla de más facturas y no de líneas
+  duplicadas.
 - **Columnas nuevas.** `id_empresa`, `PRIMARIO` y `fecha_detalle`. Si `id_empresa` distingue
   a qué empresa pertenece cada punto de venta, filtrarla alinearía la tabla nueva con la
   anterior; hay que mirarlo.
 - **La fecha.** `fecha_venta` trae hora, y se pasa a `date` en `stg_ventas`. Falta comprobar
   que la hora sea la de Paraguay (consulta 6 del analysis de verificación).
 - **Calidad del dato, en las dos tablas.** En agosto y septiembre de 2024 la venta por
-  línea es unas cuatro veces la de los meses vecinos (unos 46.000 Gs por línea contra 10.600),
-  y esos dos meses caen dentro de la ventana de 36 meses. Además la tabla anterior tiene en
-  agosto de 2025 unos tres millones de filas de más respecto de la nueva, que parece una
-  carga doble que la tabla nueva no repite.
+  línea es unas cuatro veces la de los meses vecinos (unos 46.000 Gs por línea contra 10.600)
+  y las unidades por línea, seis contra 1,5, con las filas apenas un 45% más altas. Pasa igual
+  en las dos tablas, así que viene del origen, y esos dos meses caen dentro de la ventana de
+  36 meses. En agosto de 2025 la tabla anterior tiene 8,8 millones de filas contra unos 5,4
+  millones de un mes normal, unos 3,4 millones de más, que parece una carga doble; la tabla
+  nueva tiene ese mes en 7,5 millones, normal. Por eso la diferencia entre las dos da al
+  revés en agosto de 2025 (la nueva, 15% menos) y casi se anula en septiembre.
 - **`medio_pago`.** La anterior tiene errores de codificación (`Tarjeta de cr+®dito`, 4,1
   millones de filas); la nueva no los tiene, pero suma valores nuevos como `A verificar` y una
   `Transferencia Bancaria` bien escrita junto a la `Tranferencia` con error.
