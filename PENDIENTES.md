@@ -124,11 +124,11 @@ lo que depende de él.
 
 ## Categorías de producto
 
-`dim_categoria` y `fct_ventas_diarias_categoria_36m`, en `marts_core`, están escritas
-y todavía no se construyeron en la base ni las corre ningún DAG. Se construyen con
-`dbt build --select +fct_ventas_diarias_categoria_36m dim_categoria`. Falta definir en
-qué DAG van y cada cuánto: `dim_categoria` queda desactualizada cuando el catálogo gana
-categorías nuevas.
+`dim_categoria`, `dim_cliente` y `fct_ventas_diarias_categoria_36m`, en `marts_core`, las
+construyen el DAG semanal y el mensual con `tag:core`. La primera vez hay que
+construirlas a mano, con la capa base y Mayoristas ya hechos, antes de desplegar los
+DAGs: el DAG semanal corre un test que necesita la venta diaria. `dim_categoria` queda
+desactualizada hasta la próxima corrida cuando el catálogo gana categorías nuevas.
 
 Los análisis que pidió el cliente después de entregar el de mayoristas (qué productos
 están en baja, si un producto reemplaza a otro, por qué bajan los panificados de
