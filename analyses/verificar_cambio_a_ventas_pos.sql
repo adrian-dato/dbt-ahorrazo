@@ -25,6 +25,14 @@
 --      tabla anterior solo con fecha. stg_ventas la pasa a date, lo cual es
 --      correcto solo si la hora es la de Paraguay: si fuera UTC, una venta de
 --      la noche caería en el día siguiente y se movería de mes en el cierre.
+--   7. Empresa de cada punto de venta. Confirma que Ahorrazo es id_empresa 3
+--      con los puntos de venta 3, 5 y 6, y que el 1 y el 2 son de Kingo.
+--
+-- Ventas_pos trae las ventas de Ahorrazo y las de Kingo, el otro supermercado
+-- del grupo; stg_ventas se queda con las de Ahorrazo (id_empresa = 3). De la
+-- consulta 2 a la 6, la tabla nueva se consulta con ese mismo filtro: sin él,
+-- la comparación mediría a Kingo y no la diferencia entre las dos tablas. La 1
+-- (estructura) y la 7 (empresas) no lo llevan, porque miran la tabla entera.
 --
 -- SQL plano contra dbo: se pega y se corre. Recorre las dos tablas enteras,
 -- así que conviene correrlo fuera del horario de los DAGs y de Stock.
@@ -64,7 +72,8 @@ select 'Ventas_Ahorrazo' as tabla, min(fecha_venta) as desde, max(fecha_venta) a
 from dbo.Ventas_Ahorrazo
 union all
 select 'Ventas_pos', min(fecha_venta), max(fecha_venta), count_big(*)
-from dbo.Ventas_pos;
+from dbo.Ventas_pos
+where id_empresa = 3;
 
 
 -- 3. Mes a mes: filas, venta y unidades de cada tabla. Las diferencias de los
@@ -83,6 +92,7 @@ nueva as (
            sum(cast(venta_gs as decimal(19, 2))) as venta,
            sum(cast(unidades as decimal(19, 4))) as unidades
     from dbo.Ventas_pos
+    where id_empresa = 3
     group by year(fecha_venta) * 100 + month(fecha_venta)
 )
 select
@@ -117,7 +127,7 @@ select 'Ventas_pos',
        count(distinct producto_id),
        count(distinct pdv_id)
 from dbo.Ventas_pos
-where fecha_venta >= @desde and fecha_venta < @hasta;
+where fecha_venta >= @desde and fecha_venta < @hasta and id_empresa = 3;
 
 
 -- 5. Formato de los códigos. Los valores de pdv_id y de medio_pago de cada
@@ -126,13 +136,13 @@ select 'pdv_id' as campo, cast(pdv_id as varchar(50)) as valor, 'Ventas_Ahorrazo
 from dbo.Ventas_Ahorrazo group by pdv_id
 union all
 select 'pdv_id', cast(pdv_id as varchar(50)), 'Ventas_pos', count_big(*)
-from dbo.Ventas_pos group by pdv_id
+from dbo.Ventas_pos where id_empresa = 3 group by pdv_id
 union all
 select 'medio_pago', cast(medio_pago as varchar(255)), 'Ventas_Ahorrazo', count_big(*)
 from dbo.Ventas_Ahorrazo group by medio_pago
 union all
 select 'medio_pago', cast(medio_pago as varchar(255)), 'Ventas_pos', count_big(*)
-from dbo.Ventas_pos group by medio_pago
+from dbo.Ventas_pos where id_empresa = 3 group by medio_pago
 order by campo, valor, tabla;
 
 select * from (
@@ -142,7 +152,7 @@ select * from (
 union all
 select * from (
     select top 5 'Ventas_pos' as tabla, concat(timbrado, '_', factura_nro) as ticket_id, fecha_venta
-    from dbo.Ventas_pos order by fecha_venta desc
+    from dbo.Ventas_pos where id_empresa = 3 order by fecha_venta desc
 ) as nueva;
 
 
@@ -158,6 +168,25 @@ select
     count_big(*) as lineas,
     sum(case when cast(fecha_venta as time) = '00:00:00' then 1 else 0 end) as lineas_sin_hora
 from dbo.Ventas_pos
-where fecha_venta >= @desde_h and fecha_venta < @hasta_h
+where fecha_venta >= @desde_h and fecha_venta < @hasta_h and id_empresa = 3
 group by datepart(hour, fecha_venta)
 order by hora;
+
+
+-- 7. A qué empresa pertenece cada punto de venta de Ventas_pos, en un mes
+--    cerrado. Ahorrazo tiene que ser id_empresa 3 con los puntos de venta 3, 5
+--    y 6, y Kingo los puntos 1 y 2 con otra empresa. Si un punto de venta
+--    aparece con dos empresas, o un punto de Ahorrazo con otra, el filtro de
+--    stg_ventas no alcanza.
+declare @desde_e date = '2026-07-01', @hasta_e date = '2026-08-01';
+
+select
+    id_empresa,
+    pdv_id,
+    count_big(*) as lineas,
+    count(distinct concat(timbrado, '_', factura_nro)) as facturas,
+    sum(cast(venta_gs as decimal(19, 2))) as venta
+from dbo.Ventas_pos
+where fecha_venta >= @desde_e and fecha_venta < @hasta_e
+group by id_empresa, pdv_id
+order by id_empresa, pdv_id;

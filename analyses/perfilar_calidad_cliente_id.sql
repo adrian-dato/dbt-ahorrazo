@@ -34,6 +34,7 @@ with clientes_crudos as (
     select cast(cliente_id as varchar(255))
     from {{ source('dato_solutions', 'Ventas_pos') }}
     where cliente_id is not null
+        and id_empresa = 3
 ),
 
 clasificado as (

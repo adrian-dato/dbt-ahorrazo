@@ -15,7 +15,9 @@ notebooks, con su propia copia de las mismas reglas.
 Los tres leen las mismas tablas base en SQL Server: `Ventas_pos`, `Clientes` y
 `productos`. `Ventas_pos` reemplaza desde el 20/10/2026 a `Ventas_Ahorrazo`, que
 tenía más de 238 millones de filas y quedó deprecada; las cifras de volumen de
-este documento son de esa tabla. Cada proyecto tenía su propia
+este documento son de esa tabla. `Ventas_pos` trae además las ventas de
+Kingo, el otro supermercado del grupo, y `stg_ventas` se queda con las de
+Ahorrazo (`id_empresa = 3`). Cada proyecto tenía su propia
 definición, ligeramente distinta, de qué es una venta válida y de qué es un
 cliente limpio. Acá esa lógica se resuelve una sola vez, en las capas `staging` e
 `intermediate`, y cada proyecto arma su mart encima con `ref()`. Se orquesta con Airflow, sumado al

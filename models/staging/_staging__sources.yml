@@ -29,12 +29,13 @@ sources:
         description: >
           Fact de ventas transaccional, una fila por línea de venta. Desde
           el 20/10/2026 reemplaza a Ventas_Ahorrazo, que el cliente dejó de
-          actualizar y quedó deprecada. El cliente informó que tiene la
-          misma estructura y granularidad, y no es del todo así: fecha_venta
-          llega como datetime2(6), con hora, y no como date, y stg_ventas la
-          pasa a date. Si otro tipo de columna es distinto, el contrato de
-          stg_ventas falla el build; el volumen, el historial y la
-          granularidad se comprueban con
+          actualizar y quedó deprecada. No es la misma tabla: trae las ventas
+          de los dos supermercados del grupo, Ahorrazo (id_empresa = 3,
+          puntos de venta 3, 5 y 6) y Kingo (puntos de venta 1 y 2), y
+          stg_ventas se queda con las de Ahorrazo; empieza el 17/08/2024, sin
+          el historial anterior; y fecha_venta llega con hora, no como date,
+          y stg_ventas la pasa a date. Lo que se comprobó y lo que sigue
+          abierto está en PENDIENTES.md y en
           analyses/verificar_cambio_a_ventas_pos.sql. La tabla anterior
           tenía 238M+ filas y, en el último relevamiento, era un HEAP sin
           Columnstore Index, así que una consulta que no filtre bien
@@ -54,6 +55,8 @@ sources:
           - name: producto_id
           - name: pdv_id
             description: Identificador de punto de venta/sucursal.
+          - name: id_empresa
+            description: Empresa dueña de la venta. Ahorrazo es la 3; Kingo, el otro supermercado del grupo, tiene sus ventas en la misma tabla. Solo está en Ventas_pos, y stg_ventas filtra por esta columna.
           - name: fecha_venta
           - name: venta_gs
           - name: unidades

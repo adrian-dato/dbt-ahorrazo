@@ -13,9 +13,13 @@
 -- dbt_ahorrazo/check_freshness.py) lee el resultado en run_results.json
 -- y manda su propio mail si este test warnea, sin marcar el task como
 -- failed.
+--
+-- Mira solo las ventas de Ahorrazo (id_empresa = 3): lo que interesa es que
+-- haya terminado de cargar Ahorrazo, no Kingo, que comparte la tabla.
 
 select 1 as ventas_desactualizada
 where (
     select max(cast(fecha_venta as date))
     from {{ source('dato_solutions', 'Ventas_pos') }}
+    where id_empresa = 3
 ) < dateadd(day, -1, {{ fecha_corte_mes_cerrado() }})

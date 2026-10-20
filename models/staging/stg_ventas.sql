@@ -37,6 +37,13 @@
 -- había seleccionado -- pedido explícito del equipo para exponerla en el
 -- análisis. Es un atributo de línea/venta (igual que venta_gs o
 -- unidades), no se resuelve ni se agrega acá.
+--
+-- Solo las ventas de Ahorrazo, id_empresa = 3. Ventas_pos trae también las de
+-- Kingo, el otro supermercado del grupo (puntos de venta 1 y 2), con las que no
+-- se trabaja. Ventas_Ahorrazo, la tabla anterior, venía solo con Ahorrazo
+-- (puntos de venta 3, 5 y 6). Es el mismo criterio con el que int_productos_limpio
+-- se queda con los productos de la empresa 3. Se filtra por la empresa y no por
+-- la lista de puntos de venta, que es lo que cambia cuando se abre una sucursal.
 select
     cliente_id,
     cast(producto_id as varchar(100)) as producto_id,
@@ -49,3 +56,4 @@ select
     medio_pago
 from {{ source('dato_solutions', 'Ventas_pos') }}
 where cliente_id is not null
+    and id_empresa = 3
