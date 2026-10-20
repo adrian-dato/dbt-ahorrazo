@@ -26,7 +26,7 @@
 --     correcta en todo el proyecto; repetir el grano por cliente_id
 --     crudo reintroduciría la fragmentación que la limpieza de
 --     clientes existe para resolver.
---   - int_ventas_elegibles hace INNER JOIN a stg_clientes_mapeo (no
+--   - int_ventas_elegibles hace INNER JOIN al mapeo de clientes (no
 --     LEFT como el legacy a dbo.clientes_mapeo) -- una venta cuyo
 --     cliente_id no tiene match ahí se descarta en vez de pasar con
 --     cliente_id_limpio NULL. No se replicó el filtro adicional

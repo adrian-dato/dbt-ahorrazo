@@ -58,5 +58,5 @@ select
     p.R2,
     c.nombre
 from pivotado p
-left join {{ ref('stg_clientes_limpio') }} c
+left join {{ ref('int_clientes_limpio') }} c
     on p.cliente_id_limpio = c.cliente_id_limpio

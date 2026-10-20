@@ -112,8 +112,6 @@ graph TD
         STG_VENTAS[stg_ventas]
         STG_PROD[stg_productos]
         STG_CLI[stg_clientes]
-        STG_MAPEO[stg_clientes_mapeo]
-        STG_LIMPIO[stg_clientes_limpio]
     end
 
     subgraph INT["intermediate"]
@@ -133,14 +131,12 @@ graph TD
     INT_NORM --> INT_MAPEO
     STG_VENTAS --> INT_MAPEO
     INT_NORM --> INT_LIMPIO
-    INT_MAPEO --> STG_MAPEO
-    INT_LIMPIO --> STG_LIMPIO
 
     STG_PROD --> INT_PROD
     SEED_EXCL --> INT_PROD
 
     STG_VENTAS --> INT_ELEG
-    STG_MAPEO --> INT_ELEG
+    INT_MAPEO --> INT_ELEG
     INT_PROD --> INT_ELEG
 
     INT_ELEG --> INT_12M_T
@@ -183,11 +179,10 @@ el anterior.
 4. `int_clientes_mapeo_limpio` (incremental, **47–67 min en
    `--full-refresh`**, el cuello de botella real del proyecto) e
    `int_clientes_limpio`, en paralelo entre sí.
-5. `stg_clientes_mapeo` y `stg_clientes_limpio`, en paralelo entre sí.
-6. `int_productos_limpio` (necesita `stg_productos` + seed `productos_excluidos`)
+5. `int_productos_limpio` (necesita `stg_productos` + seed `productos_excluidos`).
    Después `int_ventas_elegibles` (necesita `stg_ventas` +
-   `stg_clientes_mapeo` + `int_productos_limpio`).
-7. `int_ventas_12m_tabla`, que es la que consumen los marts.
+   `int_clientes_mapeo_limpio` + `int_productos_limpio`).
+6. `int_ventas_12m_tabla`, que es la que consumen los marts.
 
 ---
 
@@ -198,7 +193,7 @@ graph TD
     INT_ELEG[int_ventas_elegibles] --> FCT[fct_ventas_36m<br/>incremental]
     SEED_SUC[dim_sucursal_mapeo] --> PIVOT[fct_ventas_36m_pivotado<br/>table]
     FCT --> PIVOT
-    STG_LIMPIO[stg_clientes_limpio] --> PIVOT
+    INT_LIMPIO[int_clientes_limpio] --> PIVOT
     PIVOT --> DIM[dim_cliente_tipo_migracion<br/>table]
     DIM --> SNAP[dim_cliente_tipo_migracion_snapshot<br/>SCD2, check strategy]
 ```
@@ -264,7 +259,7 @@ de los cuatro niveles, así que la jerarquía completa está en cada fila.
 ```mermaid
 graph TD
     STG_VENTAS[stg_ventas] --> INT_ELEG[int_ventas_elegibles<br/>view]
-    STG_MAPEO[stg_clientes_mapeo] --> INT_ELEG
+    INT_MAPEO[int_clientes_mapeo_limpio] --> INT_ELEG
     STG_PROD[stg_productos] --> INT_PROD[int_productos_limpio<br/>table, trae las claves]
     SEED_EXCL[productos_excluidos] --> INT_PROD
     INT_PROD --> INT_ELEG

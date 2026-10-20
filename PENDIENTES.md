@@ -66,8 +66,10 @@ drop table if exists marts_mayoristas.mayoristas_v3_tickets_unidad;
 quedó sin administrar después del cutover: los tres modelos de la versión anterior, el
 mart de canasta y la tabla que escribía el notebook por pandas. Está listo para
 correr. En la misma carpeta, `baja_vista_int_ventas_12m.sql` da de baja la vista
-`intermediate.int_ventas_12m`, que se eliminó del repo: va después de desplegar el
-código nuevo en el servidor.
+`intermediate.int_ventas_12m` y `baja_vistas_staging_de_clientes.sql` las dos vistas
+de staging que envolvían al mapeo y a la dimensión de clientes. Las tres cosas se
+eliminaron del repo y los dos scripts van después de desplegar el código nuevo en el
+servidor.
 
 Dos quedaron comentados a propósito, `dbo.clientes_mayoristas_v2` y
 `dbo.clientes_mayoristas`. El segundo tiene 952.012 filas de febrero y es la tabla que
@@ -173,9 +175,7 @@ resultado muestra códigos.
 ## Limpieza de clientes
 
 `int_clientes_normalizados`, `int_clientes_mapeo_limpio` e `int_clientes_limpio` ya
-reemplazaron al proceso anterior. `stg_clientes_mapeo` y `stg_clientes_limpio` son dos
-vistas que apuntan a ellos y que se mantuvieron para no tocar a los consumidores; ver
-más abajo el plan para eliminarlas. La consulta que hizo la comparación contra el
+reemplazaron al proceso anterior. La consulta que hizo la comparación contra el
 proceso anterior ya cumplió su función y se eliminó, y el resultado quedó documentado en
 el comentario de `int_clientes_mapeo_limpio.sql`. Lo mismo pasó con la que comparaba la
 regla de `tipo_persona` contra el CASE del proceso anterior.
@@ -245,16 +245,6 @@ impide un `--full-refresh` accidental de un modelo que tarda entre 47 y 67 minut
 **Los tests nuevos están en `warn`.** Los de grano, las relaciones y los dos de
 conciliación entre capas. Después de una corrida limpia conviene pasarlos a error, y
 revisar cuánto tardan los de grano sobre las tablas grandes.
-
-**Eliminar las dos vistas de staging que envuelven al mapeo y a la dimensión de
-clientes.** Hacen `ref` a `intermediate` e invierten las capas. Solo las usan
-`int_ventas_elegibles` (el mapeo) y `fct_ventas_36m_pivotado` (el nombre). El plan: apuntar
-esos dos modelos a `int_clientes_mapeo_limpio` y a `int_clientes_limpio`, borrar las dos
-vistas con sus entradas de yml, y dar de baja los objetos con el script de mantenimiento.
-Antes de quitar el `cast` a `varchar(50)` hay que comprobar los tipos de las columnas y
-cuántos identificadores tienen más de 50 caracteres: hoy esos no cruzan con las ventas
-porque el mapeo los trunca, y sin el `cast` algunos más entrarían. Con la fuente nueva
-de ventas, conviene hacerlo después de verificarla.
 
 ## Documentación
 

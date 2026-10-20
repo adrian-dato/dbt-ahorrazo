@@ -17,8 +17,17 @@
 -- View, sin materializar: cada mart consumidor define su propia ventana
 -- de fechas sobre este resultado, acá no se fija ninguna.
 --
--- Usa stg_clientes_mapeo, no int_clientes_mapeo_limpio directo: esa vista
--- es la que tiene hechos los casts a varchar(50) que este join necesita.
+-- Une contra int_clientes_mapeo_limpio con los tipos igualados en el CTE
+-- `mapeo`. cliente_id se castea a varchar(255), el tipo de stg_ventas, para
+-- que el join no convierta el lado grande (la venta) a nvarchar por
+-- precedencia de tipos: si algún lado fuera nvarchar, SQL Server convertiría
+-- las filas de ventas en vez de las del mapeo. cliente_id_limpio se castea a
+-- varchar(50), el tipo con el que viaja a todas las tablas de abajo.
+--
+-- Antes este cast vivía en una vista de staging, stg_clientes_mapeo, que
+-- además cortaba cliente_id a 50 caracteres: una venta con un id más largo
+-- nunca cruzaba y se descartaba en silencio. Sin ese corte cruzan, y son
+-- pocas, porque un id tan largo es basura.
 --
 -- fct_ventas_36m (Canibalización) consume este modelo en lugar de una copia
 -- propia de estas reglas. Por eso aplica también la exclusión de
@@ -37,6 +46,13 @@
 -- porqué. Sigue siendo un atributo de línea acá. int_ventas_12m_tabla e
 -- int_ventas_24m_tabla listan sus columnas a propósito, así que una columna
 -- nueva en este modelo no les llega sola: hay que agregarla en las dos.
+
+with mapeo as (
+    select
+        cast(cliente_id        as varchar(255)) as cliente_id,
+        cast(cliente_id_limpio as varchar(50))  as cliente_id_limpio
+    from {{ ref('int_clientes_mapeo_limpio') }}
+)
 
 select
     v.cliente_id,
@@ -59,7 +75,7 @@ select
     -- regla, materializada en los 2 lugares donde hace falta.
     {{ clasificar_tipo_persona('c.cliente_id_limpio') }} as tipo_persona
 from {{ ref('stg_ventas') }} v
-inner join {{ ref('stg_clientes_mapeo') }} c
+inner join mapeo c
     on v.cliente_id = c.cliente_id
 inner join {{ ref('int_productos_limpio') }} p
     on cast(v.producto_id as varchar(100)) = cast(p.producto_id as varchar(100))

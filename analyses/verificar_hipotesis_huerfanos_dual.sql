@@ -3,7 +3,7 @@
 -- dedup multi-cliente_id, se verificó en verificar_hipotesis_nuevo_dual.sql
 -- y explica solo ~18-35% del crecimiento).
 --
--- stg_clientes_mapeo.sql documenta que el dedup de Fase 2
+-- int_clientes_mapeo_limpio.sql documenta que el dedup
 -- (int_clientes_mapeo_limpio) incorpora ~5.985 clientes "huérfanos"
 -- (cliente_id que aparecen en Ventas_pos pero NUNCA existieron en
 -- dbo.Clientes -- el mapeo legacy, fuente de los números de referencia,

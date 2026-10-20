@@ -90,7 +90,7 @@ clasificado as (
         c.cliente_id_limpio as cliente_id_limpio
     from staging.stg_ventas v
     cross join ventana w
-    left join staging.stg_clientes_mapeo c
+    left join intermediate.int_clientes_mapeo_limpio c
         on v.cliente_id = c.cliente_id
     left join staging.stg_productos p
         on cast(v.producto_id as varchar(100)) = cast(p.producto_id as varchar(100))
@@ -607,7 +607,7 @@ with ventana as (
 select count(distinct c.cliente_id_limpio) as clientes_totales_ventana
 from staging.stg_ventas v
 cross join ventana w
-left join staging.stg_clientes_mapeo c
+left join intermediate.int_clientes_mapeo_limpio c
     on v.cliente_id = c.cliente_id
 where v.fecha_venta >= w.desde
   and v.fecha_venta <= w.hasta;

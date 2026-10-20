@@ -13,9 +13,8 @@ y contacto. Incluyen correcciones que salieron de perfilar los datos reales
 identificación válida). El detalle de cada regla está comentado en
 `int_clientes_mapeo_limpio.sql`.
 
-Reemplazaron al proceso anterior: `stg_clientes_mapeo` y `stg_clientes_limpio`
-apuntan a `int_clientes_mapeo_limpio` e `int_clientes_limpio`, y ningún modelo del
-proyecto lee `dbo.clientes_mapeo` ni `dbo.clientes_limpio`.
+Reemplazaron al proceso anterior, y ningún modelo del proyecto lee
+`dbo.clientes_mapeo` ni `dbo.clientes_limpio`.
 
 **`int_ventas_elegibles`** define qué es una venta válida para análisis, y es el
 único lugar donde vive esa definición. Antes estaba escrita tres veces, de tres

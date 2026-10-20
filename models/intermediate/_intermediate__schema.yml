@@ -102,9 +102,9 @@ models:
       las reglas de exclusión (cliente de test del lado de la venta;
       empresa/categoría/producto excluido del lado del producto, vía
       int_productos_limpio) que antes vivían duplicadas en 3 lugares
-      distintos entre los 3 proyectos. Hace join contra stg_clientes_mapeo
-      (no directo contra int_clientes_mapeo_limpio) porque esa vista tiene
-      hechos los casts a varchar(50) que este join necesita.
+      distintos entre los 3 proyectos. Hace join contra
+      int_clientes_mapeo_limpio, con los tipos igualados para que el join
+      contra las ventas no convierta el lado grande.
       tipo_persona calculado directo acá (misma macro que int_clientes_limpio,
       ver macros/clasificar_tipo_persona.sql) -- así cubre también a los
       clientes huérfanos, que int_clientes_limpio no tiene.

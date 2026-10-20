@@ -48,7 +48,7 @@ sources:
         # desde dbt_ahorrazo_diario (Airflow) -- ver check_freshness.py.
         columns:
           - name: cliente_id
-            description: Identificador de cliente tal como llega de origen (tipo inconsistente con clientes_mapeo.cliente_id, normalizado en stg_clientes_mapeo).
+            description: Identificador de cliente tal como llega de origen.
           - name: producto_id
           - name: pdv_id
             description: Identificador de punto de venta/sucursal.
