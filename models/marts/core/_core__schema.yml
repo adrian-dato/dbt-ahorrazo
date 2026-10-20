@@ -1,0 +1,88 @@
+version: 2
+
+models:
+  - name: dim_categoria
+    description: >
+      Las categorías de producto con un código único por categoría, una
+      fila por categoría de cada nivel (1 a 4). El nombre de una categoría
+      no la identifica: 'Dama' está bajo 81 categoria_3 distintas, y 8
+      nombres de categoria_2, 99 de categoria_3 y 324 de categoria_4 se
+      repiten bajo más de un padre. categoria_key es el hash de la ruta
+      completa, así que dos categorías con el mismo nombre y distinto
+      padre tienen claves distintas. Es el árbol que se usa para analizar
+      y pronosticar por categoría, y la tabla donde se leen los nombres de
+      las claves que trae int_productos_limpio. Ver
+      macros/clave_categoria.sql.
+    columns:
+      - name: categoria_key
+        description: >
+          Código de la categoría: nivel y 12 caracteres hexadecimales del
+          hash de la ruta, por ejemplo N3-9F2A41C07B3D.
+        tests:
+          - not_null
+          - unique
+      - name: nivel
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false
+      - name: categoria_padre_key
+        description: Vacía en el nivel 1. En los demás, la clave de la categoría del nivel anterior.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_categoria')
+                field: categoria_key
+      - name: ruta
+        description: La ruta legible, por ejemplo 'Tienda > Ropa > Remeras > Dama'.
+        tests:
+          - not_null
+      - name: cant_productos
+        tests:
+          - not_null
+
+  - name: fct_ventas_diarias_categoria_36m
+    description: >
+      Venta diaria por sucursal y categoría de producto de nivel 4, sobre la
+      ventana de {{ var('ventana_meses_36m') }} meses cerrados. Lee
+      int_ventas_elegibles (la venta válida) e int_productos_limpio (la
+      clave de categoría de cada producto). Trae la clave de los cuatro
+      niveles, así que subir de nivel es agrupar por otra columna; los
+      nombres se leen uniendo con dim_categoria. Solo trae medidas que se
+      suman de un nivel a otro (venta_gs y lineas). Incremental: en corridas
+      normales reprocesa los últimos {{ var('meses_lookback_incremental') }}
+      meses cerrados completos, y un post_hook borra los días que salen de
+      la ventana.
+    columns:
+      - name: fecha_venta
+        tests:
+          - not_null
+      - name: pdv_id
+        tests:
+          - not_null
+      - name: categoria_key_n1
+        tests:
+          - not_null
+      - name: categoria_key_n2
+        tests:
+          - not_null
+      - name: categoria_key_n3
+        tests:
+          - not_null
+      - name: categoria_key_n4
+        description: >
+          Categoría de nivel 4 identificada por su ruta completa. Un producto
+          sin categoria_4 queda en el nodo '(sin asignar)' de su categoría
+          de nivel 3.
+        tests:
+          - not_null
+      - name: venta_gs
+        description: Venta neta del día, con las devoluciones en negativo.
+        tests:
+          - not_null
+      - name: lineas
+        description: Líneas de venta del día. Se suma entre niveles igual que venta_gs.
+        tests:
+          - not_null

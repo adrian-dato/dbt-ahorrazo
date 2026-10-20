@@ -45,6 +45,11 @@ vars:
   # revés.
   ventana_meses_24m: 24
 
+  # La ventana de 36 meses de la capa core (fct_ventas_diarias_categoria_36m).
+  # Var propia y no meses_ventana_canibalizacion aunque hoy valgan lo mismo:
+  # esa tabla la leen varios análisis y no es de Canibalización.
+  ventana_meses_36m: 36
+
   # Top 300 — pesos del Puntaje Final
   top300_peso_ventas: 0.40
   top300_peso_tickets: 0.30
@@ -118,6 +123,12 @@ models:
       # alcanza con `table`) -- cada modelo declara su propia
       # materialización con {{ config(...) }}.
     marts:
+      # Entidades y hechos compartidos por varios proyectos: lo que lee más
+      # de un análisis, y que por eso no pertenece a ninguno.
+      core:
+        +materialized: table
+        +tags: ["core"]
+        +schema: marts_core
       canibalizacion:
         +materialized: table
         +tags: ["canibalizacion"]

@@ -28,17 +28,10 @@ categorías ya resueltas. Materializado como tabla porque se une contra
 clave por categoría en cada uno de los cuatro niveles (`categoria_key_n1` a
 `categoria_key_n4`).
 
-**`int_categorias`** es la tabla de esas claves: una fila por categoría de cada
-nivel, con la clave de su padre y su ruta legible. Existe porque el nombre de una
-categoría no la identifica. "Dama" aparece bajo 81 categorías de nivel 3
-distintas, y 8 nombres de nivel 2, 99 de nivel 3 y 324 de nivel 4 se repiten bajo
-más de un padre. La clave es el hash de la ruta completa, así que dos categorías
-con el mismo nombre y distinto padre tienen claves distintas, y una categoría
-nueva no mueve las existentes. Un nivel sin valor (el comodín `sin asignar.`
-afecta a 59.028 productos en `categoria_4`) es un nodo `(sin asignar)` bajo su
-padre, de modo que todo producto tiene clave en los cuatro niveles.
-`categoria_4_limpio` no sirve para esto: mezcla nombres de dos niveles en la
-misma columna.
+Las claves de categoría se leen en `marts_core.dim_categoria`, que tiene una fila por
+categoría de cada nivel con su nombre y su ruta. Cada categoría se identifica por la
+ruta completa y no por el nombre, porque "Dama" aparece bajo 81 categorías de nivel 3
+distintas. El detalle está en el README de `marts/core/`.
 
 **`int_ventas_12m_tabla`** es la venta de los últimos doce meses cerrados a grano
 de línea, materializada. La consumen los marts de Mayoristas y Top 300 y el

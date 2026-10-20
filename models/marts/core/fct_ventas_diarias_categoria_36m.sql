@@ -1,6 +1,7 @@
 -- La venta diaria por sucursal y categoría de producto, sobre la ventana de
--- 36 meses cerrados de Canibalización. Una fila por día x sucursal x
--- categoría de nivel 4.
+-- 36 meses cerrados. Una fila por día x sucursal x categoría de nivel 4.
+-- Vive en marts_core porque no es de un proyecto: la leen todos los análisis
+-- que necesiten la venta por categoría (tendencias, forecast, sustitución).
 --
 -- EN QUÉ SE APOYA
 --   - int_ventas_elegibles: la venta válida del proyecto (empresa 3, sin
@@ -9,11 +10,12 @@
 --     mapeado a cliente_id_limpio). Es la única definición de qué es una
 --     venta para analizar; esta tabla no repite ninguna regla.
 --   - int_productos_limpio: la clave de categoría de cada producto.
---     int_categorias es la tabla donde se leen el nombre y la ruta de cada
+--     dim_categoria es la tabla donde se leen el nombre y la ruta de cada
 --     clave.
 --   No sale de fct_ventas_36m, que ya viene agregada por mes y no permite
---   bajar a día. La ventana sí es la misma: meses_ventana_canibalizacion
---   (36) meses cerrados, calculada con fecha_corte_mes_cerrado().
+--   bajar a día. La ventana tiene su propia variable, ventana_meses_36m
+--   (36 meses cerrados, calculados con fecha_corte_mes_cerrado()), separada
+--   de la de Canibalización: cambiar la de uno no debería mover la del otro.
 --
 -- EL NIVEL 4 Y LOS DEMÁS. El nivel más fino es categoria_key_n4, que
 -- equivale a lo que categoria_4_limpio expresa pero identificado por la
@@ -25,7 +27,7 @@
 -- en el nodo '(sin asignar)' de su categoría de nivel 3.
 --
 -- Los nombres no se repiten en cada fila (serían millones de textos
--- repetidos). Se leen uniendo la clave con int_categorias.categoria_key; la
+-- repetidos). Se leen uniendo la clave con dim_categoria.categoria_key; la
 -- sucursal se lee uniendo pdv_id con el seed dim_sucursal_mapeo.
 --
 -- SOLO MEDIDAS QUE SE SUMAN. venta_gs y lineas se pueden sumar de un nivel
@@ -60,7 +62,7 @@
         materialized='incremental',
         unique_key=['fecha_venta', 'pdv_id', 'categoria_key_n4'],
         incremental_strategy='delete+insert',
-        post_hook="delete from {{ this }} where fecha_venta < dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})"
+        post_hook="delete from {{ this }} where fecha_venta < dateadd(month, -{{ var('ventana_meses_36m') }}, {{ fecha_corte_mes_cerrado() }})"
     )
 }}
 
@@ -76,7 +78,7 @@ select
 from {{ ref('int_ventas_elegibles') }} v
 inner join {{ ref('int_productos_limpio') }} p
     on cast(v.producto_id as varchar(100)) = cast(p.producto_id as varchar(100))
-where v.fecha_venta >= dateadd(month, -{{ var('meses_ventana_canibalizacion') }}, {{ fecha_corte_mes_cerrado() }})
+where v.fecha_venta >= dateadd(month, -{{ var('ventana_meses_36m') }}, {{ fecha_corte_mes_cerrado() }})
   and v.fecha_venta <  {{ fecha_corte_mes_cerrado() }}
   {% if is_incremental() %}
   and v.fecha_venta >= dateadd(month, -{{ var('meses_lookback_incremental') }}, {{ fecha_corte_mes_cerrado() }})

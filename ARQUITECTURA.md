@@ -119,7 +119,6 @@ graph TD
         INT_MAPEO[int_clientes_mapeo_limpio<br/>incremental, el más pesado]
         INT_LIMPIO[int_clientes_limpio<br/>table]
         INT_PROD[int_productos_limpio<br/>table]
-        INT_CAT[int_categorias<br/>table]
         INT_ELEG[int_ventas_elegibles<br/>view]
         INT_12M_T[int_ventas_12m_tabla<br/>table]
     end
@@ -137,7 +136,6 @@ graph TD
 
     STG_PROD --> INT_PROD
     SEED_EXCL --> INT_PROD
-    INT_PROD --> INT_CAT
 
     STG_VENTAS --> INT_ELEG
     STG_MAPEO --> INT_ELEG
@@ -157,16 +155,8 @@ bolsas, egresos, servicios, activos, insumos ni los productos de
 une contra él en lugar de repetir el filtro. Trae además una clave por categoría
 en cada uno de los cuatro niveles.
 
-**`int_categorias`** es la tabla de esas claves: una fila por categoría de cada
-nivel, con la clave de su padre y su ruta legible. Existe porque el nombre de una
-categoría no la identifica. "Dama" aparece bajo 81 categorías de nivel 3
-distintas, y 8 nombres de nivel 2, 99 de nivel 3 y 324 de nivel 4 se repiten bajo
-más de un padre. La clave es el hash de la ruta completa desde la raíz, así que
-dos categorías con el mismo nombre y distinto padre tienen claves distintas, y
-una categoría nueva no mueve las existentes. Un nivel sin valor es un nodo
-`(sin asignar)` bajo su padre, de modo que todo producto tiene clave en los
-cuatro niveles. Ningún DAG la reconstruye todavía: hay que correrla después de
-`int_productos_limpio` cuando el catálogo gane categorías nuevas.
+Las claves de categoría se leen en `marts_core.dim_categoria`; ver la sección de la
+capa core más abajo.
 
 **`int_ventas_12m_tabla`** es la ventana móvil de 12 meses cerrados a grano de
 línea, compartida entre Top 300 y Mayoristas, y es lo que consumen los marts y el
@@ -193,8 +183,8 @@ el anterior.
    `int_clientes_limpio`, en paralelo entre sí.
 5. `stg_clientes_mapeo` y `stg_clientes_limpio`, en paralelo entre sí.
 6. `int_productos_limpio` (necesita `stg_productos` + seed `productos_excluidos`)
-   e `int_categorias` encima. Después `int_ventas_elegibles` (necesita
-   `stg_ventas` + `stg_clientes_mapeo` + `int_productos_limpio`).
+   Después `int_ventas_elegibles` (necesita `stg_ventas` +
+   `stg_clientes_mapeo` + `int_productos_limpio`).
 7. `int_ventas_12m_tabla`, que es la que consumen los marts.
 
 ---
@@ -243,14 +233,31 @@ graph TD
 dbt build --select +fct_canibalizacion_migracion_resumen
 ```
 
-### Ventas diarias por categoría
+---
+
+## Capa core
+
+Las entidades y los hechos que comparten varios proyectos, en el schema
+`marts_core`. Lo que lee más de un análisis no pertenece a ninguno, y por eso no va
+en un mart de proyecto. Hoy tiene la dimensión de categorías y la venta diaria por
+categoría.
+
+`dim_categoria` es una fila por categoría de cada nivel del catálogo, con su clave,
+la clave de su padre y su ruta legible. Existe porque el nombre de una categoría no
+la identifica: "Dama" aparece bajo 81 categorías de nivel 3 distintas, y 8 nombres
+de nivel 2, 99 de nivel 3 y 324 de nivel 4 se repiten bajo más de un padre. La clave
+es el hash de la ruta completa desde la raíz, así que dos categorías con el mismo
+nombre y distinto padre tienen claves distintas, y una categoría nueva no mueve las
+existentes. Un nivel sin valor es un nodo `(sin asignar)` bajo su padre, de modo que
+todo producto tiene clave en los cuatro niveles. Ningún DAG la reconstruye todavía:
+hay que correrla después de `int_productos_limpio` cuando el catálogo gane
+categorías nuevas.
 
 `fct_ventas_diarias_categoria_36m` es la venta diaria por sucursal y categoría de
-nivel 4, sobre la ventana de 36 meses cerrados de Canibalización. No sale de
-`fct_ventas_36m`, que está agregada por mes: lee `int_ventas_elegibles`, la venta
-válida del proyecto, y toma de `int_productos_limpio` la clave de categoría de cada
-producto. Trae la clave de los cuatro niveles, así que la jerarquía completa está
-en cada fila. `int_categorias` es la tabla donde se leen los nombres.
+nivel 4, sobre una ventana de 36 meses cerrados. No sale de `fct_ventas_36m`, que
+está agregada por mes: lee `int_ventas_elegibles`, la venta válida del proyecto, y
+toma de `int_productos_limpio` la clave de categoría de cada producto. Trae la clave
+de los cuatro niveles, así que la jerarquía completa está en cada fila.
 
 ```mermaid
 graph TD
@@ -259,18 +266,19 @@ graph TD
     STG_PROD[stg_productos] --> INT_PROD[int_productos_limpio<br/>table, trae las claves]
     SEED_EXCL[productos_excluidos] --> INT_PROD
     INT_PROD --> INT_ELEG
-    INT_PROD --> INT_CAT[int_categorias<br/>table, nombre y ruta]
-    INT_ELEG --> FCT[fct_ventas_diarias_categoria_36m<br/>incremental]
+    INT_PROD --> CAT[dim_categoria<br/>marts_core, nombre y ruta]
+    INT_ELEG --> FCT[fct_ventas_diarias_categoria_36m<br/>marts_core, incremental]
     INT_PROD --> FCT
 ```
 
 ### Orden de ejecución
 ```
-dbt build --select +fct_ventas_diarias_categoria_36m int_categorias
+dbt build --select +fct_ventas_diarias_categoria_36m dim_categoria
 ```
-`int_categorias` va explícita porque la tabla diaria no la referencia y el `+` no
-la alcanza. El `post_hook` borra los días que salen de la ventana, con el mismo
-corte por calendario que `fct_ventas_36m`.
+`dim_categoria` va explícita porque la tabla diaria no la referencia y el `+` no la
+alcanza. El `post_hook` borra los días que salen de la ventana, con el mismo corte
+por calendario que `fct_ventas_36m`. El detalle de las dos tablas está en
+`models/marts/core/README.md`.
 
 ---
 

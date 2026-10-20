@@ -16,7 +16,7 @@
 
     12 caracteres hexadecimales son 48 bits: con unos 4.000 nodos por nivel
     la probabilidad de colisión ronda 3 en cien millones, y el test de
-    unicidad de int_categorias la detectaría igual. Texto con prefijo y no
+    unicidad de dim_categoria la detectaría igual. Texto con prefijo y no
     un bigint porque un número de 19 dígitos se trunca al abrirlo en Excel
     y generaría duplicados falsos.
 

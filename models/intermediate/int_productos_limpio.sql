@@ -28,7 +28,7 @@
 -- categoria_key_n4, que identifican cada nivel por su ruta completa
 -- (ver macros/clave_categoria.sql). Todo producto tiene una clave en los
 -- cuatro niveles: un nivel sin valor es un nodo '(sin asignar)' bajo su
--- padre, no un hueco. La tabla de categorías es int_categorias.
+-- padre, no un hueco. La tabla de categorías es dim_categoria (marts_core).
 --
 -- table, no view: este modelo se une contra stg_ventas (238M+ filas)
 -- dentro de int_ventas_elegibles, que alimenta los 3 proyectos -- como

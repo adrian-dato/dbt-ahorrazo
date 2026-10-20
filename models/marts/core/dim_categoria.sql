@@ -21,6 +21,11 @@
 -- macros/normalizar_categoria.sql. int_productos_limpio trae la clave de
 -- cada nivel en cada producto: se une por ahí, no por nombre.
 --
+-- Vive en marts_core y no en intermediate porque es una tabla que leen los
+-- consumidores (Power BI, forecasting, otros análisis) para ver los nombres
+-- de las claves; intermediate es para lo que se construye y se usa adentro
+-- de dbt.
+--
 -- La unicidad de categoria_key la prueba el schema.yml. Una colisión del
 -- hash dejaría dos filas con la misma clave, porque acá se agrupa por clave
 -- y por ruta normalizada a la vez, y ese test fallaría.
