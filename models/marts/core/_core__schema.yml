@@ -55,6 +55,13 @@ models:
       normales reprocesa los últimos {{ var('meses_lookback_incremental') }}
       meses cerrados completos, y un post_hook borra los días que salen de
       la ventana.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [fecha_venta, pdv_id, categoria_key_n4]
+          config:
+            severity: warn
+            where: "fecha_venta >= dateadd(month, -3, getdate())"
     columns:
       - name: fecha_venta
         tests:
@@ -78,6 +85,12 @@ models:
           de nivel 3.
         tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_categoria')
+                field: categoria_key
+              config:
+                severity: warn
       - name: venta_gs
         description: Venta neta del día, con las devoluciones en negativo.
         tests:

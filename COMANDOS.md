@@ -160,7 +160,7 @@ dbt test --select mayoristas_v3_resumen
 dbt test --select assert_unidades_con_variancia
 ```
 
-Hay tres tests propios además de los declarados en los `schema.yml`:
+Hay cinco tests propios además de los declarados en los `schema.yml`:
 
 `assert_ventas_actualizada_mes_cerrado` avisa si la fuente no terminó de cargar
 el mes cerrado más reciente. No usa `dbt source freshness` porque ese mecanismo
@@ -171,11 +171,33 @@ calendario.
 por lo tanto está usando el fallback del corte de factura grande.
 
 `assert_cliente_id_limpio_no_explota` revisa que la heurística de colapso de
-identificadores no esté fusionando clientes distintos.
+identificadores no esté fusionando clientes distintos. A diferencia de los demás,
+no está en `warn`: una explosión de identificadores es una regresión en la
+limpieza de clientes, de la que dependen los tres proyectos, y frena el build.
 
-Los tres están en `severity: warn` a propósito: una falla de DAG tiene que
-significar un problema real de ejecución, no una alerta de contenido. El DAG
+`assert_venta_diaria_categoria_concilia_con_mensual` compara mes a mes la venta de
+`fct_ventas_diarias_categoria_36m` contra la de `fct_ventas_36m`. Las dos salen de
+la misma fuente con la misma ventana, así que tienen que sumar lo mismo, y avisa
+de los meses donde se separan más de 0,01%.
+
+`assert_pivotado_concilia_con_ventas_36m` hace lo mismo con `fct_ventas_36m_pivotado`:
+la suma de SL, R1 y R2 tiene que ser igual a la venta de las sucursales del seed.
+Detecta, entre otras cosas, una sucursal nueva que se agregó al seed y todavía no
+tiene su columna en el pivotado.
+
+Los cuatro de alerta están en `severity: warn` a propósito: una falla de DAG tiene
+que significar un problema real de ejecución, no una alerta de contenido. El DAG
 diario lee el resultado en `run_results.json` y manda su propio mail.
+
+Hay además un test genérico propio, `unique_combination_of_columns`, en
+`tests/generic/`. Prueba el grano de las tablas cuya clave es más de una columna
+(`fct_ventas_36m`, `dim_cliente_tipo_migracion`, `top300_ranking` y otras). Es la
+misma prueba que trae `dbt_utils`; se escribió acá para no tener que instalar un
+paquete, que obligaría a correr `dbt deps` en el servidor. En las tablas
+incrementales grandes se acota con `where` a los meses recientes, que son los que
+una corrida incremental puede duplicar. Los tests de grano y de relaciones entre
+tablas están en `warn` hasta que corran limpios una vez; después conviene pasarlos
+a error.
 
 ## Dónde mirar cuándo algo no cierra
 

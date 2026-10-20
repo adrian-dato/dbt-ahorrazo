@@ -7,6 +7,13 @@ models:
       año/mes de los últimos {{ var('meses_ventana_canibalizacion') }} meses.
       Incremental (delete+insert); en corridas normales reprocesa los
       últimos {{ var('meses_lookback_incremental') }} meses cerrados completos.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cliente_id_limpio, producto_id, pdv_id, anio, mes]
+          config:
+            severity: warn
+            where: "anio * 100 + mes >= year(dateadd(month, -3, getdate())) * 100 + month(dateadd(month, -3, getdate()))"
     columns:
       - name: cliente_id_limpio
         description: Identificador de cliente normalizado.
@@ -18,6 +25,13 @@ models:
       - name: pdv_id
         tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sucursal_mapeo')
+                field: pdv_id
+              config:
+                severity: warn
+                where: "anio * 100 + mes >= year(dateadd(month, -3, getdate())) * 100 + month(dateadd(month, -3, getdate()))"
       - name: anio
         tests:
           - not_null
@@ -34,6 +48,12 @@ models:
       columnas SL/R1/R2 (vía seed dim_sucursal_mapeo, no hardcodeado).
       Grano: cliente_id_limpio/anio/mes -- suma total_ventas de
       fct_ventas_36m a través de todos los productos.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cliente_id_limpio, anio, mes]
+          config:
+            severity: warn
     columns:
       - name: cliente_id_limpio
         tests:
@@ -54,6 +74,12 @@ models:
       SL_acumulado. No esperar que coincida 1:1 contra el proceso anterior
       en esa categoría puntual; sí debería coincidir la suma con "Cliente
       Dual R1 y R2".
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cliente_id_limpio, anio, mes]
+          config:
+            severity: warn
     columns:
       - name: cliente_id_limpio
         tests:
@@ -127,6 +153,12 @@ models:
       del modelo para el desempate por orden alfabético y el lookup "as
       of" del origen -- 2 detalles no obvios del código Python que hay
       que preservar para que el resultado coincida.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cliente_id_limpio, local_destino]
+          config:
+            severity: warn
     columns:
       - name: cliente_id_limpio
         tests:
@@ -196,6 +228,12 @@ models:
       agregado por (anio, mes, tipo_cliente, local_origen, local_destino),
       sin cliente_id_limpio. Mismo grano final que
       dbo.canibalizacion_sucursales.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [anio, mes, tipo_cliente, local_origen, local_destino]
+          config:
+            severity: warn
     columns:
       - name: anio
         tests:
