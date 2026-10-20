@@ -83,15 +83,18 @@ Falta también revisar si existe el snapshot de la versión anterior en el schem
 ## Historia de la clasificación
 
 Al eliminar la versión anterior salió con ella su snapshot SCD2, que era el único
-registro de cómo cambiaba la clasificación mes a mes. La versión vigente se recalcula
-entera en cada corrida y no guarda nada, así que hoy no se puede responder cuántos
-clientes había en cada nivel en cada mes.
+registro de cómo cambiaba la clasificación mes a mes. Ahora hay uno nuevo,
+`mayoristas_v3_resumen_snapshot`, que corre en el DAG mensual después de construir
+Mayoristas. La historia empieza con su primera corrida; lo anterior no se puede
+reconstruir.
 
-Arrancar un snapshot sobre `mayoristas_v3_resumen` conviene una vez que los cortes
-dejen de moverse. El corte de Pack se tocó dos veces: el 01/09 se sustituyó el IQR por
-Q3 cuando el IQR real da 0 (dejaba el corte en 4×Q3), y el 15/09 esa sustitución se
-reemplazó directamente por `2×Q3`, sin pasar por la fórmula general (ver el comentario
-en `int_mayoristas_v3_umbral_ticket.sql`).
+Dos cosas para tener presentes al leerla. Los cortes se movieron hasta hace poco (el
+de Pack se tocó el 01/09 y el 15/09, ver el comentario en
+`int_mayoristas_v3_umbral_ticket.sql`), y un cambio de corte mueve de nivel a muchos
+clientes a la vez sin que haya cambiado su forma de comprar. Y como la ventana sigue el
+calendario aunque el cliente no actualice la fuente, los clientes cuyas compras caen
+fuera de lo cargado salen de la clasificación y cierran su versión. Si un mes de la
+historia muestra un salto raro, esas son las dos primeras explicaciones.
 
 ## Canibalización corre dos versiones a la vez
 

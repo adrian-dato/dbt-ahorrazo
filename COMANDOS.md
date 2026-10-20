@@ -113,7 +113,13 @@ el modelo más lento del proyecto.
 
 ```bash
 dbt snapshot --select dim_cliente_tipo_migracion_snapshot
+dbt snapshot --select mayoristas_v3_resumen_snapshot
 ```
+
+El segundo guarda cómo cambia el nivel de Mayoristas de cada cliente. Va después de
+construir Mayoristas y lo corre el DAG mensual. Hay que tener en cuenta que los
+clientes que salen de la clasificación, por no comprar en 12 meses, cierran su
+versión.
 
 Un `dbt build` con selector no corre los snapshots. Sin selector sí los incluye
 al final. Y `dbt snapshot --full-refresh` borra la historia acumulada, que no se

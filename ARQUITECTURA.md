@@ -376,9 +376,12 @@ dbt build
   `dbt build --select +dim_cliente_tipo_migracion` no lo toca: hace falta
   `dbt snapshot --select ...` explícito. Y `dbt snapshot --full-refresh`
   **borra toda la historia acumulada**. Nunca usarlo salvo que sea intencional.
-  Queda un solo snapshot en el proyecto, el de Canibalización: el de Mayoristas
-  se eliminó junto con la versión anterior de esa metodología, así que la
-  clasificación vigente no guarda historia mes a mes.
+  Hay dos snapshots: el de Canibalización
+  (`dim_cliente_tipo_migracion_snapshot`) y el de Mayoristas
+  (`mayoristas_v3_resumen_snapshot`), que guarda cómo cambia el nivel de cada
+  cliente mes a mes. La historia de Mayoristas empieza con la primera corrida del
+  snapshot; la de la versión anterior de la metodología se perdió cuando se dio de
+  baja.
 - **La alerta de actualización no corre dentro de `dbt build` ni `dbt
   snapshot`**. Es un comando aparte (`dbt test --select
   assert_ventas_actualizada_mes_cerrado`). No usa `dbt source
