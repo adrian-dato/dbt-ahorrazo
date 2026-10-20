@@ -21,6 +21,10 @@
 --      valores, y que ticket_id (timbrado y factura_nro) tenga el mismo
 --      formato: si cambia, una factura que está en las dos tablas se contaría
 --      dos veces.
+--   6. Hora de las ventas. Ventas_pos trae fecha_venta con hora (datetime2) y la
+--      tabla anterior solo con fecha. stg_ventas la pasa a date, lo cual es
+--      correcto solo si la hora es la de Paraguay: si fuera UTC, una venta de
+--      la noche caería en el día siguiente y se movería de mes en el cierre.
 --
 -- SQL plano contra dbo: se pega y se corre. Recorre las dos tablas enteras,
 -- así que conviene correrlo fuera del horario de los DAGs y de Stock.
@@ -140,3 +144,20 @@ select * from (
     select top 5 'Ventas_pos' as tabla, concat(timbrado, '_', factura_nro) as ticket_id, fecha_venta
     from dbo.Ventas_pos order by fecha_venta desc
 ) as nueva;
+
+
+-- 6. A qué horas se vende, en un mes cerrado. Una tienda abierta de día vende
+--    entre la mañana y la noche; si las ventas aparecen concentradas de madrugada
+--    o con un corrimiento de tres horas contra el horario de la tienda, la hora
+--    está en UTC. Mirar también si hay ventas con hora 00:00:00 exacta: serían
+--    las que no traen hora.
+declare @desde_h date = '2026-07-01', @hasta_h date = '2026-08-01';
+
+select
+    datepart(hour, fecha_venta) as hora,
+    count_big(*) as lineas,
+    sum(case when cast(fecha_venta as time) = '00:00:00' then 1 else 0 end) as lineas_sin_hora
+from dbo.Ventas_pos
+where fecha_venta >= @desde_h and fecha_venta < @hasta_h
+group by datepart(hour, fecha_venta)
+order by hora;

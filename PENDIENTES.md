@@ -31,6 +31,16 @@ nada. Según el resultado:
 - Si el formato de `timbrado` o `factura_nro` cambió, una factura presente en las dos
   tablas se contaría dos veces al unirlas.
 
+La primera corrida ya mostró que no es del todo la misma estructura: `fecha_venta`
+llega como `datetime2(6)`, con hora, y la tabla anterior la traía como `date`. El
+contrato de `stg_ventas` frenó el build, y se resolvió pasándola a `date` en esa vista.
+Era importante: las visitas de Mayoristas, los días con venta de Top 300 y la venta
+diaria cuentan días distintos de esa columna, y con la hora incluida cada venta habría
+contado como un día. Queda por comprobar que la hora sea la de Paraguay y no UTC, porque
+si fuera UTC una venta de la noche caería en el día siguiente; es la consulta 6 de
+`analyses/verificar_cambio_a_ventas_pos.sql`. Y como la tabla nueva sí trae la hora, es
+información que la anterior no tenía y que hoy se descarta.
+
 También falta saber si `Ventas_pos` es un heap o tiene columnstore: la anterior, en
 el último relevamiento, era un heap sin índice. Las cifras de volumen de la
 documentación (238 millones de filas) son de la tabla anterior.

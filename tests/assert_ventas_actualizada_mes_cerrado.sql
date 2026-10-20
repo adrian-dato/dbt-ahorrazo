@@ -16,6 +16,6 @@
 
 select 1 as ventas_desactualizada
 where (
-    select max(fecha_venta)
+    select max(cast(fecha_venta as date))
     from {{ source('dato_solutions', 'Ventas_pos') }}
 ) < dateadd(day, -1, {{ fecha_corte_mes_cerrado() }})

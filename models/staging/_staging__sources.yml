@@ -30,9 +30,11 @@ sources:
           Fact de ventas transaccional, una fila por línea de venta. Desde
           el 20/10/2026 reemplaza a Ventas_Ahorrazo, que el cliente dejó de
           actualizar y quedó deprecada. El cliente informó que tiene la
-          misma estructura y granularidad. Si algún tipo de columna es
-          distinto, el contrato de stg_ventas falla el build; el volumen, el
-          historial y la granularidad se comprueban con
+          misma estructura y granularidad, y no es del todo así: fecha_venta
+          llega como datetime2(6), con hora, y no como date, y stg_ventas la
+          pasa a date. Si otro tipo de columna es distinto, el contrato de
+          stg_ventas falla el build; el volumen, el historial y la
+          granularidad se comprueban con
           analyses/verificar_cambio_a_ventas_pos.sql. La tabla anterior
           tenía 238M+ filas y, en el último relevamiento, era un HEAP sin
           Columnstore Index, así que una consulta que no filtre bien

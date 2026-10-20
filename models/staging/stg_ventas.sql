@@ -19,6 +19,20 @@
 -- aunque esa fila nunca fuera a matchear nada. Mismo criterio que ya
 -- usa el legacy (CAST(producto_id AS varchar(100)) en varios scripts).
 --
+-- fecha_venta se pasa a date. Ventas_pos la trae como datetime2(6), con hora,
+-- y la tabla anterior la traía como date. Todo lo que está de acá para abajo
+-- trata esta columna como un día: las visitas de un cliente son los días
+-- distintos con compra, los días con venta de un producto son los días
+-- distintos en que se vendió, la venta diaria agrupa por ella y el tablero la
+-- une con el calendario. Con hora incluida, cada venta contaría como un día
+-- distinto sin que nada fallara. El contrato de abajo detectó la diferencia
+-- el 20/10/2026, al primer build contra la tabla nueva.
+--
+-- El date es el de la fecha que trae el dato, tal cual. Si Ventas_pos guarda la
+-- hora en UTC y no en hora de Paraguay, una venta de la noche cae en el día
+-- siguiente; la consulta 6 de analyses/verificar_cambio_a_ventas_pos.sql
+-- muestra a qué horas vende cada sucursal para comprobarlo.
+--
 -- medio_pago: ya estaba declarada en _staging__sources.yml pero nunca se
 -- había seleccionado -- pedido explícito del equipo para exponerla en el
 -- análisis. Es un atributo de línea/venta (igual que venta_gs o
@@ -27,7 +41,7 @@ select
     cliente_id,
     cast(producto_id as varchar(100)) as producto_id,
     pdv_id,
-    fecha_venta,
+    cast(fecha_venta as date) as fecha_venta,
     venta_gs,
     unidades,
     timbrado,
