@@ -10,73 +10,96 @@ dependencias y el orden de ejecución están en `ARQUITECTURA.md`; los comandos,
 
 Desde el 20/10/2026 el cliente actualiza `dbo.Ventas_pos` y deja de actualizar
 `dbo.Ventas_Ahorrazo`, que quedó deprecada. El código ya lee la tabla nueva: el
-modelo `stg_ventas`, el test de frescura y la declaración de la fuente. Es el único
-punto de contacto con la tabla, así que todo lo demás se enteró sin tocarse.
+modelo `stg_ventas`, el test de frescura y la declaración de la fuente. `stg_ventas`
+es el único punto de contacto con la tabla de ventas, así que el resto se enteró sin
+tocarse.
 
-El cliente dijo que tiene la misma estructura y granularidad, pero no se verificó.
-El contrato de `stg_ventas` hace fallar el build si algún tipo de columna es
-distinto, y no detecta lo importante: si trae el historial completo o si los datos
-coinciden con los de la tabla anterior. Eso lo comprueba
-`analyses/verificar_cambio_a_ventas_pos.sql`, que hay que correr antes de reconstruir
-nada. Según el resultado:
+El cliente dijo que tiene la misma estructura y granularidad. La verificación del
+20/10/2026 (`analyses/verificar_cambio_a_ventas_pos.sql`) mostró que no es así.
 
-- Si la estructura y los totales mes a mes coinciden y el historial llega hasta donde
-  llegaba el de la tabla anterior, no hay más cambios. Si los totales de algún mes
-  cerrado difieren, los dos modelos incrementales (`int_clientes_mapeo_limpio` y
-  `fct_ventas_36m`) arrastran datos de la tabla anterior y hay que reconstruirlos con
-  `--full-refresh`.
-- Si `Ventas_pos` arranca más tarde, no alcanza como fuente única: las ventanas de 12,
-  24 y 36 meses quedarían cortas. `stg_ventas` tendría que unir las dos tablas con una
-  fecha de corte, y conviene que el cliente confirme desde cuándo es cada una.
-- Si el formato de `timbrado` o `factura_nro` cambió, una factura presente en las dos
-  tablas se contaría dos veces al unirlas.
+### Lo que se encontró y ya está resuelto
 
-La primera corrida ya mostró que no es del todo la misma estructura: `fecha_venta`
-llega como `datetime2(6)`, con hora, y la tabla anterior la traía como `date`. El
-contrato de `stg_ventas` frenó el build, y se resolvió pasándola a `date` en esa vista.
-Era importante: las visitas de Mayoristas, los días con venta de Top 300 y la venta
-diaria cuentan días distintos de esa columna, y con la hora incluida cada venta habría
-contado como un día. Queda por comprobar que la hora sea la de Paraguay y no UTC, porque
-si fuera UTC una venta de la noche caería en el día siguiente; es la consulta 6 de
-`analyses/verificar_cambio_a_ventas_pos.sql`. Y como la tabla nueva sí trae la hora, es
-información que la anterior no tenía y que hoy se descarta.
+`Ventas_pos` trae las ventas de dos supermercados del grupo, Ahorrazo y Kingo. Ahorrazo
+es `id_empresa = 3` y tiene los puntos de venta 3, 5 y 6; Kingo tiene el 1 y el 2, que
+suman 31,4 millones de filas, el 17% de la tabla. Solo se trabaja con Ahorrazo, igual
+que con el catálogo de productos, donde `int_productos_limpio` ya se queda con
+`id_empresa = 3`. La tabla anterior venía solo con Ahorrazo. Por eso `stg_ventas`
+filtra por `id_empresa = 3`, y lo mismo hace el test de frescura. Se filtra por la
+empresa y no por la lista de puntos de venta.
 
-La verificación del 20/10/2026 mostró que `Ventas_pos` no reemplaza a la tabla anterior
-sin cambios:
+Sin ese filtro, en los meses que están en las dos tablas (de octubre de 2024 a julio de
+2026) la tabla nueva tenía entre 24% y 37% más filas (mediana 31%) y entre 16% y 28%
+más venta, y en julio de 2026 trae 172.014 clientes contra 138.652 y 52.012 productos
+contra 40.469. Los puntos 1 y 2 explican unas 1,2 millones de filas por mes de las 1,65
+millones de diferencia. Queda por ver cuánto sobra una vez filtrado por empresa: las
+consultas 3 y 4 del analysis ya comparan con el filtro puesto, y la 7 confirma que
+`id_empresa = 3` coincide con los puntos de venta 3, 5 y 6.
 
-- **Historial.** Va del 17/08/2024 al 18/10/2026, con 180,8 millones de filas; la anterior
-  iba del 30/09/2018 al 06/08/2026, con 263,1 millones. Las ventanas de 12 y de 24 meses
-  entran enteras, la de 36 no: faltan unos diez meses (octubre de 2023 a mediados de agosto
-  de 2024) para Canibalización y para la venta diaria por categoría.
-- **Puntos de venta.** Trae cinco (1, 2, 3, 5 y 6) y la anterior tres (3, 5 y 6). Los puntos 1
-  y 2 suman 31,4 millones de filas, el 17% de la tabla, y no se sabe qué son. En los meses que
-  están en las dos tablas, de octubre de 2024 a julio de 2026, la nueva tiene entre 24% y 37%
-  más filas (mediana 31%) y entre 16% y 28% más venta (mediana 23%), sin contar agosto y
-  septiembre de 2025. Los puntos 1 y 2 aportan unas 1,2 millones de filas por mes de las 1,65
-  millones de diferencia, o sea cerca de tres cuartos; el resto no está explicado. En julio
-  de 2026 trae 172.014 clientes contra 138.652 y 52.012 productos contra 40.469, con casi las
-  mismas líneas por factura (11,6 contra 11,9), lo que habla de más facturas y no de líneas
-  duplicadas.
-- **Columnas nuevas.** `id_empresa`, `PRIMARIO` y `fecha_detalle`. Si `id_empresa` distingue
-  a qué empresa pertenece cada punto de venta, filtrarla alinearía la tabla nueva con la
-  anterior; hay que mirarlo.
-- **La fecha.** `fecha_venta` trae hora, y se pasa a `date` en `stg_ventas`. Falta comprobar
-  que la hora sea la de Paraguay (consulta 6 del analysis de verificación).
-- **Calidad del dato, en las dos tablas.** En agosto y septiembre de 2024 la venta por
-  línea es unas cuatro veces la de los meses vecinos (unos 46.000 Gs por línea contra 10.600)
-  y las unidades por línea, seis contra 1,5, con las filas apenas un 45% más altas. Pasa igual
-  en las dos tablas, así que viene del origen, y esos dos meses caen dentro de la ventana de
-  36 meses. En agosto de 2025 la tabla anterior tiene 8,8 millones de filas contra unos 5,4
-  millones de un mes normal, unos 3,4 millones de más, que parece una carga doble; la tabla
-  nueva tiene ese mes en 7,5 millones, normal. Por eso la diferencia entre las dos da al
-  revés en agosto de 2025 (la nueva, 15% menos) y casi se anula en septiembre.
-- **`medio_pago`.** La anterior tiene errores de codificación (`Tarjeta de cr+®dito`, 4,1
-  millones de filas); la nueva no los tiene, pero suma valores nuevos como `A verificar` y una
-  `Transferencia Bancaria` bien escrita junto a la `Tranferencia` con error.
+La columna `fecha_venta` llega con hora y no como `date`. El contrato de `stg_ventas`
+frenó el build y se resolvió pasándola a `date` en esa vista. Era importante: las
+visitas de Mayoristas, los días con venta de Top 300 y la venta diaria cuentan días
+distintos de esa columna, y con la hora incluida cada venta habría contado como un día.
+Queda por comprobar que la hora sea la de Paraguay y no UTC, porque si fuera UTC una
+venta de la noche caería en el día siguiente; es la consulta 6 del analysis. La hora es
+información que la tabla anterior no tenía y que hoy se descarta.
 
-También falta saber si `Ventas_pos` es un heap o tiene columnstore: la anterior, en
-el último relevamiento, era un heap sin índice. Las cifras de volumen de la
-documentación (238 millones de filas) son de la tabla anterior.
+En `medio_pago` hay valores nuevos (`A verificar`, `Gift Card` y una `Transferencia
+Bancaria` bien escrita junto a la `Tranferencia` con error), y la tabla anterior tiene
+errores de codificación (`Tarjeta de cr+®dito`, 4,1 millones de filas) que la nueva no
+tiene.
+
+### Pendiente: el historial anterior al 17/08/2024
+
+`Ventas_pos` empieza el 17/08/2024, y la tabla anterior iba del 30/09/2018 al
+06/08/2026. Las ventanas de 12 y de 24 meses entran enteras y la de 36 no: a la
+corrida de octubre de 2026 le faltan unos diez meses, de octubre de 2023 a mediados de
+agosto de 2024. Afecta a Canibalización y a la venta diaria por categoría de
+`marts_core`; Mayoristas y Top 300 no se ven afectados.
+
+Hasta resolverlo no hay que correr `--full-refresh` de `fct_ventas_36m` ni de
+`int_clientes_mapeo_limpio`: reconstruirían desde `Ventas_pos` sola y perderían ese
+tramo. Las corridas incrementales de los DAGs no lo tocan. La venta diaria por
+categoría (`fct_ventas_diarias_categoria_36m`) se construye igual, pero con la ventana
+corta, y habrá que reconstruirla con `--full-refresh` cuando el historial esté resuelto.
+
+Hay dos caminos, y depende de lo que conteste el cliente:
+
+- Que el cliente cargue el historial de Ahorrazo en `Ventas_pos`, al menos desde
+  octubre de 2023.
+- Unir las dos tablas en `stg_ventas`: `Ventas_Ahorrazo` hasta el 31/08/2024 y
+  `Ventas_pos` desde el 01/09/2024. Con un corte por fecha no hay solapamiento, y por
+  lo tanto tampoco doble conteo de facturas. Es transitorio: desde la corrida de
+  septiembre de 2027 la ventana de 36 meses ya entra en `Ventas_pos` y la unión se
+  saca. Depende de que la tabla anterior no se dé de baja hasta entonces. Si en los
+  meses comunes los puntos 3, 5 y 6 de las dos tablas difieren varios puntos
+  porcentuales, el corte va a mostrar un escalón en las series; las consultas 3 y 4
+  sirven para medirlo.
+
+### Pendiente: agosto y septiembre de 2024
+
+En agosto y septiembre de 2024 la venta por línea es unas cuatro veces la de los meses
+vecinos (unos 46.000 Gs por línea contra 10.600) y las unidades por línea, seis contra
+1,5, con las filas apenas un 45% más altas. Pasa igual en las dos tablas, así que viene
+del origen. Esos dos meses están dentro de la ventana de 36 meses, y ya lo estaban con
+la tabla anterior; salen en las corridas de septiembre y octubre de 2027. No se corrige
+sin saber qué pasó.
+
+### Para preguntarle al cliente (21/10/2026)
+
+- ¿Pueden cargar en `Ventas_pos` el historial de Ahorrazo anterior al 17/08/2024? Como
+  mínimo desde octubre de 2023, mejor todo.
+- Si no, ¿pueden asegurar que `Ventas_Ahorrazo` no se dé de baja antes de octubre de
+  2027?
+- ¿Qué pasó en agosto y septiembre de 2024? ¿Hubo un cambio de sistema de caja? ¿Esas
+  ventas son correctas, o hay que excluirlas o corregirlas?
+- ¿Qué significan las columnas `PRIMARIO` y `fecha_detalle`?
+- ¿La hora de `fecha_venta` es la de Paraguay o UTC?
+
+### Otros
+
+Falta saber si `Ventas_pos` es un heap o tiene columnstore: la anterior, en el último
+relevamiento, era un heap sin índice. Las cifras de volumen de la documentación (238
+millones de filas) son de la tabla anterior.
 
 Los scripts y notebooks anteriores a dbt, en `scripts-sql-ahorrazo` y en los notebooks
 viejos de `analisis_mayorista` y `top_300_productos`, siguen leyendo la tabla
