@@ -79,7 +79,7 @@ dbt build --select +tag:mayoristas
 ```
 
 El test va primero y es una puerta, no un trámite. Compara el máximo de
-`Ventas_Ahorrazo` contra el último día del mes cerrado. Si avisa, la fuente
+`Ventas_pos` contra el último día del mes cerrado. Si avisa, la fuente
 todavía no terminó de cargar el mes y un build recalcularía la clasificación
 sobre un período incompleto: todos los cortes se moverían por un mes a medio
 cargar y no por el negocio. Está en `severity: warn`, así que no frena nada por

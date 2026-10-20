@@ -33,5 +33,5 @@ select
     timbrado,
     factura_nro,
     medio_pago
-from {{ source('dato_solutions', 'Ventas_Ahorrazo') }}
+from {{ source('dato_solutions', 'Ventas_pos') }}
 where cliente_id is not null

@@ -39,7 +39,7 @@ tablero de Power BI, y es tabla por dos motivos. Congela la ventana entre
 corridas de dbt: una vista, al pasar de un mes al siguiente, empezaría a devolver
 otro período sin que nadie haya corrido nada, y eso dejaría las tablas de
 `marts_mayoristas` desalineadas contra la venta que ve Power BI. Y evita que cada
-consumidor vuelva a recorrer la cadena sobre `dbo.Ventas_Ahorrazo`, que tiene más
+consumidor vuelva a recorrer la cadena sobre `dbo.Ventas_pos`, que tiene más
 de 238 millones de filas: son ocho recorridos por corrida contra uno solo.
 
 Lee `int_ventas_elegibles` directo, sin una vista en el medio, y lista sus

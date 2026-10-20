@@ -19,7 +19,7 @@ models:
       dbo.clientes_mapeo, que construía el proceso anterior
       (clientes_mapeo_limpio.sql). Incluye a los clientes de dbo.Clientes y
       a los cliente_id que aparecen en ventas pero no tienen ficha. Es
-      incremental: para detectar cliente_id nuevos en Ventas_Ahorrazo
+      incremental: para detectar cliente_id nuevos en Ventas_pos
       revisa los últimos {{ var('meses_lookback_incremental') }} meses
       cerrados más el mes en curso. Excluye clientes no identificables
       (cliente_id sin ningún dígito) -- no aparecen en esta tabla ni con
@@ -137,7 +137,7 @@ models:
       por dos motivos: congela la ventana entre corridas de dbt (una vista
       se movería sola con el calendario y desalinearía las tablas de
       marts_mayoristas contra la venta), y evita que cada consumidor vuelva
-      a recorrer la cadena sobre dbo.Ventas_Ahorrazo (238M+ filas). Lee
+      a recorrer la cadena sobre dbo.Ventas_pos (238M+ filas). Lee
       int_ventas_elegibles directo y lista sus columnas: una columna nueva
       en ese modelo hay que agregarla acá y en int_ventas_24m_tabla.
     columns:

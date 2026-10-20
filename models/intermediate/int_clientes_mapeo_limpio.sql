@@ -8,7 +8,7 @@
 --     todo el runtime. dbt materializa en un objeto nuevo y hace el
 --     swap al final.
 --   - Incremental: la detección de cliente_id "huérfanos" (que aparecen
---     en Ventas_Ahorrazo pero no en Clientes -- paso B del proceso
+--     en Ventas_pos pero no en Clientes -- paso B del proceso
 --     legacy) ya no escanea los 238M+ registros completos en cada
 --     corrida, solo desde el día 1 de hace `meses_lookback_incremental`
 --     meses cerrados hasta hoy, mes en curso incluido. Un cliente cuya
@@ -76,7 +76,7 @@ ventas_recientes as (
 ),
 
 ventas_huerfanas as (
-    -- Paso B: cliente_id que aparecen en Ventas_Ahorrazo pero no en
+    -- Paso B: cliente_id que aparecen en Ventas_pos pero no en
     -- Clientes -- se les asigna cliente_id_limpio con la misma regla,
     -- sin nombre/ci_ruc asociado (no existen en Clientes).
     select v.cliente_id

@@ -5,7 +5,7 @@ Proyecto dbt compartido por los tres proyectos de datos de Ahorrazo:
 
 ## Por qué este repo existe
 
-Los tres proyectos leen las mismas tablas base en SQL Server (`Ventas_Ahorrazo`,
+Los tres proyectos leen las mismas tablas base en SQL Server (`Ventas_pos`,
 `clientes_mapeo`, `clientes_limpio`, `productos`). Antes, cada uno implementaba
 por su cuenta la limpieza de esas tablas y las reglas de negocio: qué categorías
 se excluyen, cómo se colapsan los `cliente_id` duplicados. Con el tiempo las tres

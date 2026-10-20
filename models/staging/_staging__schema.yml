@@ -52,7 +52,7 @@ models:
 
   - name: stg_ventas
     description: >
-      1:1 sobre dbo.Ventas_Ahorrazo. Contract enforced: si el tipo real
+      1:1 sobre dbo.Ventas_pos. Contract enforced: si el tipo real
       de una columna cambia en la fuente (o alguien saca un cast sin
       querer), dbt falla acá mismo en el build, en vez de que aparezca
       como un error de conversión río abajo en algún mart. Se agregó por

@@ -12,8 +12,10 @@ notebooks, con su propia copia de las mismas reglas.
 | **Top 300 Productos** | ¿Cuáles son los productos más importantes del catálogo, por sucursal? | `top300_ranking` |
 | **Clientes Mayoristas** | ¿Qué clientes compran a escala mayorista y con qué nivel? | `mayoristas_v3_resumen` |
 
-Los tres leen las mismas tablas base en SQL Server: `Ventas_Ahorrazo`, con más de
-238 millones de filas, `Clientes` y `productos`. Cada proyecto tenía su propia
+Los tres leen las mismas tablas base en SQL Server: `Ventas_pos`, `Clientes` y
+`productos`. `Ventas_pos` reemplaza desde el 20/10/2026 a `Ventas_Ahorrazo`, que
+tenía más de 238 millones de filas y quedó deprecada; las cifras de volumen de
+este documento son de esa tabla. Cada proyecto tenía su propia
 definición, ligeramente distinta, de qué es una venta válida y de qué es un
 cliente limpio. Acá esa lógica se resuelve una sola vez, en las capas `staging` e
 `intermediate`, y cada proyecto arma su mart encima con `ref()`. Se orquesta con Airflow, sumado al
@@ -96,7 +98,7 @@ materializarla las mantiene alineadas.
 ```mermaid
 graph TD
     subgraph SRC["sources (dbo.*, réplica de producción)"]
-        SRC_VENTAS[Ventas_Ahorrazo<br/>238M+ filas]
+        SRC_VENTAS[Ventas_pos<br/>238M+ filas]
         SRC_PROD[productos]
         SRC_CLI[Clientes]
     end
@@ -165,7 +167,7 @@ contra `getdate()` en cada consulta: el primero de cada mes empezaría a devolve
 un período distinto sin que se haya corrido nada, y eso desalinearía las tablas de
 `marts_mayoristas`, que guardan la ventana del día en que se construyeron, contra
 la venta que ve Power BI. Materializarla además baja de ocho recorridos de la
-cadena sobre `dbo.Ventas_Ahorrazo` por corrida a uno solo. Lee
+cadena sobre `dbo.Ventas_pos` por corrida a uno solo. Lee
 `int_ventas_elegibles` directo y lista sus columnas: antes había una vista
 intermedia con `select *`, y las columnas nuevas no le llegaban hasta correr
 `sp_refreshview` a mano.

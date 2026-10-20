@@ -9,7 +9,7 @@
 --     sin pivot dinámico).
 --   - `table` (no incremental): se reconstruye completo en cada corrida,
 --     pero a partir de fct_ventas_36m (ya chico, mantenido
---     incrementalmente) -- no repite el escaneo de Ventas_Ahorrazo.
+--     incrementalmente) -- no repite el escaneo de Ventas_pos.
 --     dbt hace el swap atómico al final igual que con cualquier `table`.
 --     Si el volumen crece y esto se vuelve el cuello de botella, se
 --     puede pasar a incremental después (delete+insert por

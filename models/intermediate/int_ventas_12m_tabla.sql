@@ -18,7 +18,7 @@
 -- 2.224 clientes de diferencia.
 --
 -- Además evita que cada consumidor recorra de nuevo la cadena de vistas sobre
--- dbo.Ventas_Ahorrazo (238M+ filas). Siete modelos de dos proyectos leen esta
+-- dbo.Ventas_pos (238M+ filas). Siete modelos de dos proyectos leen esta
 -- tabla: sin materializarla serían siete recorridos por corrida en lugar de
 -- uno.
 --

@@ -1,6 +1,6 @@
 {{ config(severity='warn') }}
 
--- Alerta de frescura de Ventas_Ahorrazo -- reemplaza el chequeo viejo
+-- Alerta de frescura de Ventas_pos -- reemplaza el chequeo viejo
 -- de "dbt source freshness" (umbral relativo, hace N días) por uno de
 -- calendario: los 3 marts del portfolio asumen meses cerrados completos
 -- (macro fecha_corte_mes_cerrado()), así que lo que importa no es cuán
@@ -17,5 +17,5 @@
 select 1 as ventas_desactualizada
 where (
     select max(fecha_venta)
-    from {{ source('dato_solutions', 'Ventas_Ahorrazo') }}
+    from {{ source('dato_solutions', 'Ventas_pos') }}
 ) < dateadd(day, -1, {{ fecha_corte_mes_cerrado() }})

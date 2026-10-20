@@ -2,7 +2,7 @@
 -- cliente_id_limpio (nombre/ci_ruc/celular/mail/tipo_persona).
 --
 -- table (no incremental): a diferencia del mapeo de arriba, esta
--- dimensión no depende de Ventas_Ahorrazo -- sale entera de Clientes,
+-- dimensión no depende de Ventas_pos -- sale entera de Clientes,
 -- una tabla chica que no es la fuente del cuello de botella. Recalcularla
 -- completa en cada corrida y dejar que dbt haga el swap atómico es más
 -- simple que mantener un incremental acá, y evita el patrón

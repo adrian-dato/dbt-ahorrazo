@@ -7,7 +7,7 @@ version: 2
 # contra dbo.
 #
 # Lo único que el cliente/proveedor de datos entrega directo es
-# Ventas_Ahorrazo, Clientes y productos. Las demás tablas dbo.* que
+# Ventas_pos, Clientes y productos. Las demás tablas dbo.* que
 # existían (clientes_mapeo, clientes_limpio, entre otras) las generaban
 # procesos legacy (stored procs, KNIME, scripts sueltos), no el
 # proveedor, y se reemplazaron por modelos de este proyecto: ninguna de
@@ -25,11 +25,19 @@ sources:
       los DAGs de Sales se serializan con un pool de Airflow para no
       competir por los recursos.
     tables:
-      - name: Ventas_Ahorrazo
+      - name: Ventas_pos
         description: >
-          Fact de ventas transaccional, 238M+ filas. En el último
-          relevamiento era un HEAP sin Columnstore Index, así que una
-          consulta que no filtre bien recorre la tabla entera.
+          Fact de ventas transaccional, una fila por línea de venta. Desde
+          el 20/10/2026 reemplaza a Ventas_Ahorrazo, que el cliente dejó de
+          actualizar y quedó deprecada. El cliente informó que tiene la
+          misma estructura y granularidad. Si algún tipo de columna es
+          distinto, el contrato de stg_ventas falla el build; el volumen, el
+          historial y la granularidad se comprueban con
+          analyses/verificar_cambio_a_ventas_pos.sql. La tabla anterior
+          tenía 238M+ filas y, en el último relevamiento, era un HEAP sin
+          Columnstore Index, así que una consulta que no filtre bien
+          recorría la tabla entera; las cifras de volumen de la
+          documentación son de esa tabla.
         # Alerta de frescura -- ya no usa `dbt source freshness` (umbral
         # relativo tipo "hace N días", no soporta un corte de calendario).
         # El chequeo real vive en tests/assert_ventas_actualizada_mes_cerrado.sql

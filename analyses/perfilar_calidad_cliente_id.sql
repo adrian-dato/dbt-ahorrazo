@@ -1,5 +1,5 @@
 -- Perfilado de calidad de dato sobre cliente_id crudo (dbo.Clientes +
--- huérfanos de Ventas_Ahorrazo), INDEPENDIENTE de si el proceso legacy
+-- huérfanos de Ventas_pos), INDEPENDIENTE de si el proceso legacy
 -- (clientes_mapeo_limpio.sql) lo resuelve bien o mal -- nunca se
 -- confirmó con certeza que esa heurística sea correcta, así que no sirve
 -- de referencia. Este perfilado mira los datos crudos directamente.
@@ -32,7 +32,7 @@ with clientes_crudos as (
     union
 
     select cast(cliente_id as varchar(255))
-    from {{ source('dato_solutions', 'Ventas_Ahorrazo') }}
+    from {{ source('dato_solutions', 'Ventas_pos') }}
     where cliente_id is not null
 ),
 
