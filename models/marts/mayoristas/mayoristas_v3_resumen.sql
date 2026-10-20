@@ -91,5 +91,16 @@ select
         when 2 then 'Medio'
         when 1 then 'Potencial'
         else 'Minorista'
-    end as nivel_mayorista
+    end as nivel_mayorista,
+    -- Los cuatro niveles agrupados en dos, para separar a los clientes que
+    -- compran como un comercio que revende de los demás. Mayoristas es solo
+    -- el nivel Alto; Minoristas junta Medio, Potencial y Minorista. Se
+    -- define acá, junto a la metodología, y de acá la heredan dim_cliente y
+    -- los análisis que necesiten esta separación, como la segmentación RFM.
+    -- Ojo con los nombres: "Minorista" (singular) es el nivel de puntaje 0, y
+    -- "Minoristas" (plural) es el grupo que incluye ese nivel y otros dos.
+    case
+        when (c1_upt_alto + c2_pct_grandes_alto + c3_ventas_alto) = 3 then 'Mayoristas'
+        else 'Minoristas'
+    end as segmento_mayorista
 from criterios

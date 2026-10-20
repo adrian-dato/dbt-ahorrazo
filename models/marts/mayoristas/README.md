@@ -8,6 +8,13 @@ cuánto se parece su forma de comprar a la de alguien que revende.
 Tres criterios, un punto cada uno, sobre una ventana móvil de doce meses
 cerrados. La suma da el nivel: 3 es Alto, 2 Medio, 1 Potencial y 0 Minorista.
 
+Además del nivel, cada cliente trae `segmento_mayorista`, que agrupa los cuatro en
+dos: **Mayoristas** es el nivel Alto, y **Minoristas** junta Medio, Potencial y
+Minorista. Es la columna que usan los análisis que necesitan separar a quien revende
+de quien no, como la segmentación RFM. Los nombres se parecen y conviene no
+confundirlos: "Minorista" en singular es el nivel de puntaje 0, y "Minoristas" en
+plural es el grupo que lo incluye junto con otros dos.
+
 **C1, volumen por visita.** Promedio de unidades por factura, calculado por
 separado en cada unidad de medida. Cumple si está en el percentil 75 o más
 comparado con el resto de los clientes que compran esa misma unidad. Alcanza con

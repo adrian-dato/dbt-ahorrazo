@@ -235,6 +235,19 @@ models:
           - accepted_values:
               arguments:
                 values: ['Alto', 'Medio', 'Potencial', 'Minorista']
+      - name: segmento_mayorista
+        description: >
+          Los cuatro niveles agrupados en dos: Mayoristas es el nivel Alto, y
+          Minoristas junta Medio, Potencial y Minorista. Es la columna que
+          separa a los clientes que compran como un comercio que revende de
+          los demás, por ejemplo para segmentar con RFM por separado.
+          "Minorista" (singular) es el nivel de puntaje 0; "Minoristas"
+          (plural) es el grupo.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Mayoristas', 'Minoristas']
 
   - name: mayoristas_v3_umbrales
     description: >
