@@ -41,6 +41,32 @@ si fuera UTC una venta de la noche caería en el día siguiente; es la consulta 
 `analyses/verificar_cambio_a_ventas_pos.sql`. Y como la tabla nueva sí trae la hora, es
 información que la anterior no tenía y que hoy se descarta.
 
+La verificación del 20/10/2026 mostró que `Ventas_pos` no reemplaza a la tabla anterior
+sin cambios:
+
+- **Historial.** Va del 17/08/2024 al 18/10/2026, con 180,8 millones de filas; la anterior
+  iba del 30/09/2018 al 06/08/2026, con 263,1 millones. Las ventanas de 12 y de 24 meses
+  entran enteras, la de 36 no: faltan unos diez meses (octubre de 2023 a mediados de agosto
+  de 2024) para Canibalización y para la venta diaria por categoría.
+- **Puntos de venta.** Trae cinco (1, 2, 3, 5 y 6) y la anterior tres (3, 5 y 6). Los puntos 1
+  y 2 suman 31,4 millones de filas, el 17% de la tabla, y no se sabe qué son. En los meses que
+  están en las dos tablas, a partir de octubre de 2024, la nueva tiene entre 17% y 30% más
+  filas y entre 15% y 23% más venta que la anterior, lo cual es coherente con esos dos
+  puntos pero no está comprobado. En julio de 2026 trae 172.014 clientes contra 138.652.
+- **Columnas nuevas.** `id_empresa`, `PRIMARIO` y `fecha_detalle`. Si `id_empresa` distingue
+  a qué empresa pertenece cada punto de venta, filtrarla alinearía la tabla nueva con la
+  anterior; hay que mirarlo.
+- **La fecha.** `fecha_venta` trae hora, y se pasa a `date` en `stg_ventas`. Falta comprobar
+  que la hora sea la de Paraguay (consulta 6 del analysis de verificación).
+- **Calidad del dato, en las dos tablas.** En agosto y septiembre de 2024 la venta por
+  línea es unas cuatro veces la de los meses vecinos (unos 46.000 Gs por línea contra 10.600),
+  y esos dos meses caen dentro de la ventana de 36 meses. Además la tabla anterior tiene en
+  agosto de 2025 unos tres millones de filas de más respecto de la nueva, que parece una
+  carga doble que la tabla nueva no repite.
+- **`medio_pago`.** La anterior tiene errores de codificación (`Tarjeta de cr+®dito`, 4,1
+  millones de filas); la nueva no los tiene, pero suma valores nuevos como `A verificar` y una
+  `Transferencia Bancaria` bien escrita junto a la `Tranferencia` con error.
+
 También falta saber si `Ventas_pos` es un heap o tiene columnstore: la anterior, en
 el último relevamiento, era un heap sin índice. Las cifras de volumen de la
 documentación (238 millones de filas) son de la tabla anterior.
