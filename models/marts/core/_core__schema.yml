@@ -1,6 +1,72 @@
 version: 2
 
 models:
+  - name: dim_cliente
+    description: >
+      Una fila por cliente_id_limpio, con su identidad y las etiquetas que les
+      ponen los análisis. Incluye a todos los clientes del mapeo, también los
+      que compran pero nunca se dieron de alta en dbo.Clientes: esos salen con
+      nombre '(sin ficha)' y tiene_ficha en 0. Es la tabla que se une para ver
+      quién es un cliente y en qué segmento quedó. Está al final de la cadena:
+      depende de los análisis y ningún análisis la lee, porque si no dbt
+      encontraría una dependencia circular. Los análisis leen la identidad de
+      int_clientes_limpio. No trae celular ni mail, que son datos personales;
+      quien los necesita los toma de int_clientes_limpio. Las etiquetas son
+      las vigentes: la historia de la clasificación de Mayoristas está en
+      snapshots.mayoristas_v3_resumen_snapshot.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique
+      - name: nombre
+        tests:
+          - not_null
+      - name: documento
+        description: Documento (cédula o RUC) limpio. Vacío para los clientes sin ficha.
+      - name: tipo_persona
+        description: Físico o Jurídico, según la estructura del documento. Se calcula para todos, tengan ficha o no.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Fisico', 'Juridico']
+      - name: tiene_ficha
+        description: 1 si el cliente figura en dbo.Clientes, 0 si solo aparece en las ventas.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+                quote: false
+      - name: nivel_mayorista
+        description: >
+          Alto, Medio, Potencial o Minorista según la clasificación de
+          Mayoristas, o Sin clasificar si el cliente no compró en los últimos
+          12 meses cerrados.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Alto', 'Medio', 'Potencial', 'Minorista', 'Sin clasificar']
+      - name: segmento_mayorista
+        description: >
+          Mayoristas (el nivel Alto) o Minoristas (el resto), o Sin clasificar
+          si no compró en los últimos 12 meses cerrados. Es la columna que
+          separa la segmentación RFM.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Mayoristas', 'Minoristas', 'Sin clasificar']
+      - name: frecuencia_compra
+        description: Cada cuánto viene el cliente, según Mayoristas, o Sin clasificar si no compró en la ventana.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Semanal', 'Quincenal', 'Mensual', 'Esporádico', 'Visita única', 'Sin datos', 'Sin clasificar']
+
   - name: dim_categoria
     description: >
       Las categorías de producto con un código único por categoría, una

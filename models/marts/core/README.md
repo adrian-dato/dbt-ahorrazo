@@ -4,8 +4,35 @@ Las entidades y los hechos que comparten varios proyectos. Lo que lee más de un
 análisis no pertenece a ninguno, y por eso no va en `marts/<proyecto>/`. Se
 escribe en el schema `marts_core`.
 
-Hoy tiene dos modelos: la dimensión de categorías de producto y la venta diaria
-por categoría.
+Hoy tiene tres modelos: la dimensión de clientes, la dimensión de categorías de
+producto y la venta diaria por categoría.
+
+## `dim_cliente`
+
+Una fila por cliente, con su identidad y las etiquetas que les ponen los análisis:
+el nivel de Mayoristas, el segmento (Mayoristas o Minoristas) y cada cuánto compra.
+Es la tabla que se une para ver quién es un cliente y en qué segmento quedó.
+
+Incluye a todos los clientes del mapeo, no solo a los que tienen ficha en
+`dbo.Clientes`. Quienes compran pero nunca se dieron de alta salen con nombre
+`(sin ficha)` y `tiene_ficha` en 0; su tipo de persona se calcula igual porque solo
+depende del documento. Un cliente que no compró en los últimos doce meses cerrados
+no tiene fila en la clasificación de Mayoristas y sale como `Sin clasificar`.
+
+Está al final de la cadena y no al principio. Reúne resultados de los análisis, así
+que depende de ellos, y los análisis no pueden leerla: si Mayoristas leyera
+`dim_cliente` y `dim_cliente` leyera a Mayoristas, dbt no podría ordenarlos y
+fallaría por dependencia circular. Los análisis leen la identidad de
+`int_clientes_limpio`, y cada uno toma de los demás lo que necesita desde el
+resultado donde se define: la segmentación RFM, por ejemplo, toma
+`segmento_mayorista` de `mayoristas_v3_resumen`.
+
+No trae celular ni mail. Son datos personales y esta dimensión la puede leer
+cualquier análisis; la ficha del tablero de Mayoristas los sigue tomando de
+`int_clientes_limpio`. Las etiquetas son las vigentes. La historia de cómo cambió
+cada cliente de nivel está en el snapshot de Mayoristas,
+`snapshots.mayoristas_v3_resumen_snapshot`. Cuando haya otros análisis
+construidos, como el RFM, sus etiquetas se suman acá.
 
 ## `dim_categoria`
 
@@ -81,9 +108,12 @@ histórica pasa a la categoría nueva. Ningún DAG la construye todavía.
 ## Cómo construirlos
 
 ```
-dbt build --select +fct_ventas_diarias_categoria_36m dim_categoria
+dbt build --select tag:core
 ```
 
+Con la capa base y Mayoristas ya construidos, `tag:core` alcanza. La primera vez, o
+cuando falta alguno de los insumos, `+fct_ventas_diarias_categoria_36m dim_categoria`
+construye la venta diaria y la dimensión de categorías con todo lo que necesitan;
 `dim_categoria` va explícita porque la tabla diaria no la referencia y el `+` no la
 alcanza. La primera corrida de la tabla diaria recorre 36 meses de la fact de
 ventas: conviene hacerla fuera del horario de los DAGs y del proceso de Stock.

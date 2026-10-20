@@ -236,8 +236,18 @@ dbt build --select +fct_canibalizacion_migracion_resumen
 
 Las entidades y los hechos que comparten varios proyectos, en el schema
 `marts_core`. Lo que lee más de un análisis no pertenece a ninguno, y por eso no va
-en un mart de proyecto. Hoy tiene la dimensión de categorías y la venta diaria por
-categoría.
+en un mart de proyecto. Hoy tiene la dimensión de clientes, la de categorías y la venta
+diaria por categoría.
+
+`dim_cliente` es una fila por cliente, con su identidad y las etiquetas que les ponen
+los análisis: el nivel de Mayoristas, el segmento (Mayoristas o Minoristas) y cada
+cuánto compra. Incluye a todos los clientes del mapeo, también a los que compran sin
+haberse dado nunca de alta en `dbo.Clientes`, que salen como `(sin ficha)`. Está al
+final de la cadena: depende de los análisis, y ningún análisis la lee, porque dbt no
+puede ordenar dos modelos que se leen entre sí. Los análisis leen la identidad de
+`int_clientes_limpio`, que sigue siendo el insumo, y toman las etiquetas de los demás
+desde el resultado donde se definen. No trae celular ni mail. Las etiquetas son las
+vigentes; la historia de la clasificación de Mayoristas está en un snapshot.
 
 `dim_categoria` es una fila por categoría de cada nivel del catálogo, con su clave,
 la clave de su padre y su ruta legible. Existe porque el nombre de una categoría no
@@ -246,9 +256,9 @@ de nivel 2, 99 de nivel 3 y 324 de nivel 4 se repiten bajo más de un padre. La 
 es el hash de la ruta completa desde la raíz, así que dos categorías con el mismo
 nombre y distinto padre tienen claves distintas, y una categoría nueva no mueve las
 existentes. Un nivel sin valor es un nodo `(sin asignar)` bajo su padre, de modo que
-todo producto tiene clave en los cuatro niveles. Ningún DAG la reconstruye todavía:
-hay que correrla después de `int_productos_limpio` cuando el catálogo gane
-categorías nuevas.
+todo producto tiene clave en los cuatro niveles. Se reconstruye junto con el resto de la
+capa core, y queda desactualizada entre corridas cuando el catálogo gana categorías
+nuevas.
 
 `fct_ventas_diarias_categoria_36m` es la venta diaria por sucursal y categoría de
 nivel 4, sobre una ventana de 36 meses cerrados. No sale de `fct_ventas_36m`, que
@@ -266,16 +276,22 @@ graph TD
     INT_PROD --> CAT[dim_categoria<br/>marts_core, nombre y ruta]
     INT_ELEG --> FCT[fct_ventas_diarias_categoria_36m<br/>marts_core, incremental]
     INT_PROD --> FCT
+    INT_CLI[int_clientes_limpio] --> CLI[dim_cliente<br/>marts_core, identidad y etiquetas]
+    INT_MAPEO --> CLI
+    MAYO[mayoristas_v3_resumen<br/>y mayoristas_v3_frecuencia_compra] --> CLI
+    MAYO --> SNAP[mayoristas_v3_resumen_snapshot<br/>SCD2, historia del nivel]
 ```
 
 ### Orden de ejecución
 ```
-dbt build --select +fct_ventas_diarias_categoria_36m dim_categoria
+dbt build --select tag:core
 ```
-`dim_categoria` va explícita porque la tabla diaria no la referencia y el `+` no la
-alcanza. El `post_hook` borra los días que salen de la ventana, con el mismo corte
-por calendario que `fct_ventas_36m`. El detalle de las dos tablas está en
-`models/marts/core/README.md`.
+Con la capa base y Mayoristas ya construidos, `tag:core` alcanza. La primera vez,
+`+fct_ventas_diarias_categoria_36m dim_categoria` construye la venta diaria y la
+dimensión de categorías con todo lo que necesitan; `dim_categoria` va explícita
+porque la tabla diaria no la referencia y el `+` no la alcanza. El `post_hook` de la
+venta diaria borra los días que salen de la ventana, con el mismo corte por calendario
+que `fct_ventas_36m`. El detalle está en `models/marts/core/README.md`.
 
 ---
 
