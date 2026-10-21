@@ -56,16 +56,20 @@ corrida de octubre de 2026 le faltan unos diez meses, de octubre de 2023 a media
 agosto de 2024. Afecta a Canibalización y a la venta diaria por categoría de
 `marts_core`; Mayoristas y Top 300 no se ven afectados.
 
-Hasta resolverlo no hay que correr `--full-refresh` de `fct_ventas_36m` ni de
-`int_clientes_mapeo_limpio`: reconstruirían desde `Ventas_pos` sola y perderían ese
-tramo. Las corridas incrementales de los DAGs no lo tocan. La venta diaria por
-categoría (`fct_ventas_diarias_categoria_36m`) se construye igual, pero con la ventana
-corta, y habrá que reconstruirla con `--full-refresh` cuando el historial esté resuelto.
+El 21/10/2026 se le pidió al cliente que amplíe `Ventas_pos` 36 meses hacia atrás, y
+todavía no confirmó. Mientras tanto se avanza con lo que hay, y se asume que los datos de
+`Ventas_pos` son correctos: las reconstrucciones con `--full-refresh` se hicieron sobre
+`Ventas_pos` sola, así que `fct_ventas_36m` y la venta diaria por categoría
+(`fct_ventas_diarias_categoria_36m`) arrancan el 17/08/2024, con agosto de 2024 a medias.
+Para series de tiempo conviene empezar en septiembre de 2024. Cuando llegue el historial
+hay que reconstruir con `--full-refresh` esas dos tablas y `int_clientes_mapeo_limpio`, y
+los clientes que solo compraron antes de agosto de 2024 y no están en `Clientes` vuelven
+a aparecer en el mapeo.
 
-Hay dos caminos, y depende de lo que conteste el cliente:
+Hay dos caminos:
 
 - Que el cliente cargue el historial de Ahorrazo en `Ventas_pos`, al menos desde
-  octubre de 2023.
+  octubre de 2023. Es lo que se pidió.
 - Unir las dos tablas en `stg_ventas`: `Ventas_Ahorrazo` hasta el 31/08/2024 y
   `Ventas_pos` desde el 01/09/2024. Con un corte por fecha no hay solapamiento, y por
   lo tanto tampoco doble conteo de facturas. Es transitorio: desde la corrida de
@@ -87,10 +91,10 @@ en el resto de los meses tiene más. Y del 17 al 31 de agosto la nueva suma 326 
 millones de Gs en 916 mil filas (356.000 Gs por línea), más que todo agosto en la
 anterior. Esos números son sin filtrar por empresa, y habrá que repetirlos con el filtro
 puesto. Los dos meses están dentro de la ventana de 36 meses, y ya lo estaban con la
-tabla anterior; salen en las corridas de septiembre y octubre de 2027. No se corrige sin
-saber qué pasó.
+tabla anterior; salen en las corridas de septiembre y octubre de 2027. Se asume que son
+correctos (decisión del 21/10/2026) y no se corrigen.
 
-### Para preguntarle al cliente (21/10/2026)
+### Preguntas abiertas para el cliente (no bloquean: se asume que los datos son correctos)
 
 - ¿Pueden cargar en `Ventas_pos` el historial de Ahorrazo anterior al 17/08/2024? Como
   mínimo desde octubre de 2023, mejor todo.
