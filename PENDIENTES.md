@@ -79,10 +79,16 @@ Hay dos caminos, y depende de lo que conteste el cliente:
 
 En agosto y septiembre de 2024 la venta por línea es unas cuatro veces la de los meses
 vecinos (unos 46.000 Gs por línea contra 10.600) y las unidades por línea, seis contra
-1,5, con las filas apenas un 45% más altas. Pasa igual en las dos tablas, así que viene
-del origen. Esos dos meses están dentro de la ventana de 36 meses, y ya lo estaban con
-la tabla anterior; salen en las corridas de septiembre y octubre de 2027. No se corrige
-sin saber qué pasó.
+1,5, con las filas apenas un 45% más altas. El nivel por línea es el mismo en las dos
+tablas (en septiembre, 45.400 Gs en la anterior y 46.100 en la nueva), así que viene del
+origen. Los totales no coinciden: en septiembre, único mes completo en las dos, la nueva
+tiene 8,5% menos filas y 7,1% menos venta que la anterior pese a incluir a Kingo, cuando
+en el resto de los meses tiene más. Y del 17 al 31 de agosto la nueva suma 326 mil
+millones de Gs en 916 mil filas (356.000 Gs por línea), más que todo agosto en la
+anterior. Esos números son sin filtrar por empresa, y habrá que repetirlos con el filtro
+puesto. Los dos meses están dentro de la ventana de 36 meses, y ya lo estaban con la
+tabla anterior; salen en las corridas de septiembre y octubre de 2027. No se corrige sin
+saber qué pasó.
 
 ### Para preguntarle al cliente (21/10/2026)
 
