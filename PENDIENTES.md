@@ -98,10 +98,19 @@ saber qué pasó.
   2027?
 - ¿Qué pasó en agosto y septiembre de 2024? ¿Hubo un cambio de sistema de caja? ¿Esas
   ventas son correctas, o hay que excluirlas o corregirlas?
-- ¿Qué significan las columnas `PRIMARIO` y `fecha_detalle`?
+- ¿Qué es `fecha_detalle` y en qué se diferencia de `fecha_venta`?
 - ¿La hora de `fecha_venta` es la de Paraguay o UTC?
 
 ### Otros
+
+`PRIMARIO` es una clave única por fila: el 21/10/2026 había 181.095.696 valores
+distintos en 181.095.696 filas, y ninguno nulo. Al parecer es autoincremental. No sirve
+para detectar duplicados, porque una venta cargada dos veces tendría dos valores
+distintos. Lo que sí podría hacer es servir de marca de agua para los modelos
+incrementales: la tabla no trae fecha de carga, y si `PRIMARIO` sigue el orden de
+carga, tomar lo que supera el máximo anterior atraparía también las filas que llegan
+tarde con fechas viejas, que el lookback de dos meses no ve. Falta comprobar que siga
+ese orden; no se implementa por ahora.
 
 Falta saber si `Ventas_pos` es un heap o tiene columnstore: la anterior, en el último
 relevamiento, era un heap sin índice. Las cifras de volumen de la documentación (238
