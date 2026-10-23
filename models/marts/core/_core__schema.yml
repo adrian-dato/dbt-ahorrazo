@@ -170,9 +170,9 @@ models:
     description: >
       Feature store de clientes, en formato largo: una fila por cliente ×
       feature. Entrada de la segmentación cualitativa (cluster.py, repo
-      customer-profiling). Dos grupos: categoria_3, la participación de cada
-      categoría de nivel 3 en el gasto del cliente, y medio_pago, la
-      participación de cada medio de pago en sus tickets. Ventana de 12 meses
+      customer-profiling). Dos grupos, categoria_3 y medio_pago, medidos los
+      dos por tickets: qué parte de los tickets del cliente incluye cada
+      categoría de nivel 3 o cada medio de pago. Ventana de 12 meses
       cerrados. Largo y no ancho porque categoria_3 tiene 999 categorías con
       venta y una columna por cada una pasa el límite de 1.024 columnas de SQL
       Server. La tabla ancha del clustering se arma aparte, con las features
@@ -207,12 +207,16 @@ models:
           completa (categoria_1 > categoria_2 > categoria_3). Es el nombre que
           verán el clustering y Gemini.
       - name: medida
-        description: Valor sin normalizar. Guaraníes en categoria_3, tickets en medio_pago.
+        description: Tickets del cliente que incluyen la feature.
+      - name: tickets_cliente
+        description: Tickets totales del cliente en la ventana.
+        tests:
+          - not_null
       - name: participacion
         description: >
-          medida dividida por el total del cliente en ese grupo. Suma 1 dentro
-          de cada cliente y grupo. En categoria_3 solo entran las categorías
-          con gasto neto positivo.
+          medida / tickets_cliente, entre 0 y 1. Es la "Share Tickets" de la
+          segmentación anterior (dbo.variables_kmeans). No suma 1 dentro de un
+          cliente: un ticket con varias categorías cuenta en todas.
         tests:
           - not_null
       - name: fecha_corte
