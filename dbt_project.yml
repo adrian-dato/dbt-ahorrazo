@@ -146,4 +146,4 @@ models:
       profiling:
         +materialized: view
         +tags: ["profiling"]
-        +schema: mart_profiling
+        +schema: marts_profiling
