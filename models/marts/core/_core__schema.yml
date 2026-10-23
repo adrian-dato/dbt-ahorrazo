@@ -165,3 +165,55 @@ models:
         description: Líneas de venta del día. Se suma entre niveles igual que venta_gs.
         tests:
           - not_null
+
+  - name: fct_features_cliente
+    description: >
+      Feature store de clientes, en formato largo: una fila por cliente ×
+      feature. Entrada de la segmentación cualitativa (cluster.py, repo
+      customer-profiling). Dos grupos: categoria_3, la participación de cada
+      categoría de nivel 3 en el gasto del cliente, y medio_pago, la
+      participación de cada medio de pago en sus tickets. Ventana de 12 meses
+      cerrados. Largo y no ancho porque categoria_3 tiene 999 categorías con
+      venta y una columna por cada una pasa el límite de 1.024 columnas de SQL
+      Server. La tabla ancha del clustering se arma aparte, con las features
+      que se elijan.
+    tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [cliente_id_limpio, grupo, feature_key]
+          config:
+            severity: warn
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: grupo
+        description: categoria_3 o medio_pago.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['categoria_3', 'medio_pago']
+      - name: feature_key
+        description: >
+          En categoria_3, la clave de dim_categoria (el nombre solo no
+          identifica: 'sin asignar' está bajo 112 padres). En medio_pago, el
+          medio de pago tal como viene.
+        tests:
+          - not_null
+      - name: feature_nombre
+        description: >
+          Nombre legible y único dentro del grupo. En categoria_3 es la ruta
+          completa (categoria_1 > categoria_2 > categoria_3). Es el nombre que
+          verán el clustering y Gemini.
+      - name: medida
+        description: Valor sin normalizar. Guaraníes en categoria_3, tickets en medio_pago.
+      - name: participacion
+        description: >
+          medida dividida por el total del cliente en ese grupo. Suma 1 dentro
+          de cada cliente y grupo. En categoria_3 solo entran las categorías
+          con gasto neto positivo.
+        tests:
+          - not_null
+      - name: fecha_corte
+        description: Primer día del mes en curso al construir la tabla; la ventana termina el día anterior.
