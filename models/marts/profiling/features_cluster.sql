@@ -106,5 +106,6 @@ inner join tickets t
     on t.cliente_id_limpio = a.cliente_id_limpio
 left join otras o
     on o.cliente_id_limpio = a.cliente_id_limpio
-left join {{ ref('dim_cliente') }} c
+-- La etiqueta sale de donde se define, como en ventas_rfm, y no de dim_cliente.
+left join {{ ref('mayoristas_v3_resumen') }} c
     on c.cliente_id_limpio = a.cliente_id_limpio

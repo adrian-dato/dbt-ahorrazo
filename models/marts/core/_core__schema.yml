@@ -10,8 +10,8 @@ models:
       quién es un cliente y en qué segmento quedó. Está al final de la cadena:
       depende de los análisis y ningún análisis la lee, porque si no dbt
       encontraría una dependencia circular. Los análisis leen la identidad de
-      int_clientes_limpio. No trae celular ni mail, que son datos personales;
-      quien los necesita los toma de int_clientes_limpio. Las etiquetas son
+      int_clientes_limpio. Trae celular y mail, datos personales: el acceso a
+      marts_core tiene que estar restringido a quien los pueda ver. Las etiquetas son
       las vigentes: la historia de la clasificación de Mayoristas está en
       snapshots.mayoristas_v3_resumen_snapshot.
     columns:
@@ -24,6 +24,10 @@ models:
           - not_null
       - name: documento
         description: Documento (cédula o RUC) limpio. Vacío para los clientes sin ficha.
+      - name: celular
+        description: Teléfono, desde dbo.Clientes. Dato personal. Vacío para los clientes sin ficha.
+      - name: mail
+        description: Correo, desde dbo.Clientes. Dato personal. Vacío para los clientes sin ficha.
       - name: tipo_persona
         description: Físico o Jurídico, según la estructura del documento. Se calcula para todos, tengan ficha o no.
         tests:

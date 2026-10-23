@@ -248,7 +248,8 @@ haberse dado nunca de alta en `dbo.Clientes`, que salen como `(sin ficha)`. Est�
 final de la cadena: depende de los análisis, y ningún análisis la lee, porque dbt no
 puede ordenar dos modelos que se leen entre sí. Los análisis leen la identidad de
 `int_clientes_limpio`, que sigue siendo el insumo, y toman las etiquetas de los demás
-desde el resultado donde se definen. No trae celular ni mail. Las etiquetas son las
+desde el resultado donde se definen. Trae celular y mail, que son datos personales,
+así que el acceso a `marts_core` tiene que estar restringido. Las etiquetas son las
 vigentes; la historia de la clasificación de Mayoristas está en un snapshot.
 
 `dim_categoria` es una fila por categoría de cada nivel del catálogo, con su clave,

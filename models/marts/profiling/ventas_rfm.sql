@@ -7,7 +7,9 @@
 --
 -- Vista sobre dos tablas: int_ventas_12m_tabla ya tiene la ventana congelada y
 -- las exclusiones (cliente de prueba, Kingo, productos fuera del catálogo de
--- Ahorrazo), y dim_cliente tiene la etiqueta. rfm.py vuelve a acotar por fecha
+-- Ahorrazo), y mayoristas_v3_resumen tiene la etiqueta. La etiqueta se toma de
+-- donde se define y no de dim_cliente: dim_cliente va a sumar las etiquetas del
+-- RFM, y el RFM no puede leer una tabla que se alimenta de su propio resultado. rfm.py vuelve a acotar por fecha
 -- con su window_days, que con 365 cubre la misma ventana.
 --
 -- El segmento es el de la última clasificación mensual: corre después del DAG
@@ -22,5 +24,5 @@ select
     v.ticket_id,
     coalesce(c.segmento_mayorista, 'Sin clasificar') as segmento_mayorista
 from {{ ref('int_ventas_12m_tabla') }} v
-left join {{ ref('dim_cliente') }} c
+left join {{ ref('mayoristas_v3_resumen') }} c
     on c.cliente_id_limpio = v.cliente_id_limpio

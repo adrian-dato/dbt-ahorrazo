@@ -23,9 +23,10 @@
 -- cambió cada cliente de nivel está en el snapshot de Mayoristas
 -- (snapshots.mayoristas_v3_resumen_snapshot).
 --
--- SIN DATOS DE CONTACTO. Celular y mail son datos personales y esta dimensión
--- la lee cualquier análisis. Quien los necesite, como la ficha del tablero de
--- Mayoristas, los toma de int_clientes_limpio.
+-- DATOS DE CONTACTO. Trae celular y mail desde el 23/10/2026: el tablero de
+-- segmentación usa una sola tabla de clientes y muestra el celular. Son datos
+-- personales, así que el acceso a marts_core tiene que seguir restringido a
+-- quien los pueda ver. Los clientes sin ficha no tienen contacto.
 --
 -- Las etiquetas de otros análisis (la segmentación RFM, el tipo de
 -- Canibalización) se suman acá cuando esos análisis estén construidos.
@@ -45,6 +46,8 @@ select
     u.cliente_id_limpio,
     coalesce(c.nombre, '(sin ficha)')                     as nombre,
     c.ci_ruc                                              as documento,
+    c.celular,
+    c.mail,
     {{ clasificar_tipo_persona('u.cliente_id_limpio') }}  as tipo_persona,
     case when c.cliente_id_limpio is null then 0 else 1 end as tiene_ficha,
     coalesce(m.nivel_mayorista, 'Sin clasificar')          as nivel_mayorista,

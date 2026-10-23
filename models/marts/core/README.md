@@ -27,9 +27,10 @@ fallaría por dependencia circular. Los análisis leen la identidad de
 resultado donde se define: la segmentación RFM, por ejemplo, toma
 `segmento_mayorista` de `mayoristas_v3_resumen`.
 
-No trae celular ni mail. Son datos personales y esta dimensión la puede leer
-cualquier análisis; la ficha del tablero de Mayoristas los sigue tomando de
-`int_clientes_limpio`. Las etiquetas son las vigentes. La historia de cómo cambió
+Trae celular y mail desde el 23/10/2026, porque el tablero de segmentación usa una
+sola tabla de clientes y muestra el celular. Son datos personales: el acceso a
+`marts_core` tiene que estar restringido a quien los pueda ver. Las etiquetas son las
+vigentes. La historia de cómo cambió
 cada cliente de nivel está en el snapshot de Mayoristas,
 `snapshots.mayoristas_v3_resumen_snapshot`. Cuando haya otros análisis
 construidos, como el RFM, sus etiquetas se suman acá.
