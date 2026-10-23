@@ -59,9 +59,9 @@ por_categoria as (
 por_medio_pago as (
     select
         cliente_id_limpio,
-        cast('medio_pago' as varchar(20)),
-        cast(coalesce(medio_pago, '(sin dato)') as nvarchar(255)) collate database_default,
-        cast(count(distinct ticket_id) as decimal(19, 2))
+        cast('medio_pago' as varchar(20))                                       as grupo,
+        cast(coalesce(medio_pago, '(sin dato)') as nvarchar(255)) collate database_default as feature_key,
+        cast(count(distinct ticket_id) as decimal(19, 2))                       as medida
     from ventas
     group by cliente_id_limpio, coalesce(medio_pago, '(sin dato)')
 ),
