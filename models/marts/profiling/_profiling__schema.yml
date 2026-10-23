@@ -19,3 +19,22 @@ models:
           - accepted_values:
               arguments:
                 values: ['Mayoristas', 'Minoristas', 'Sin clasificar']
+
+  - name: features_cluster
+    description: >
+      Entrada de la segmentación cualitativa (cluster.py, modo
+      source_pivoted): una fila por cliente, una columna por feature. Columnas
+      cat_ por cada categoría de nivel 3 que compra al menos el 1% de los
+      clientes, más cat_(otras categorías), y pago_ por cada medio de pago.
+      Valor: la parte de los tickets del cliente que incluye esa categoría o
+      medio. La lista de columnas se recalcula en cada build.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique
+      - name: segmento_mayorista
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Mayoristas', 'Minoristas', 'Sin clasificar']
