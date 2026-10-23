@@ -141,3 +141,9 @@ models:
         +materialized: table
         +tags: ["mayoristas"]
         +schema: marts_mayoristas
+      # Fuente de la segmentación RFM del repo customer-profiling (Python). Sus
+      # tablas de salida las escribe ese script en este mismo schema.
+      profiling:
+        +materialized: view
+        +tags: ["profiling"]
+        +schema: mart_profiling

@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: ventas_rfm
+    description: >
+      Fuente de la segmentación RFM (rfm.py, repo customer-profiling, rama
+      ahorrazo). Venta de 12 meses cerrados a grano de línea, con el segmento
+      de Mayoristas de cada cliente como columna de agrupación. Las tablas de
+      salida del RFM las escribe el script en este mismo schema.
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+      - name: ticket_id
+        tests:
+          - not_null
+      - name: segmento_mayorista
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Mayoristas', 'Minoristas', 'Sin clasificar']
