@@ -28,6 +28,18 @@
 -- personales, así que el acceso a marts_core tiene que seguir restringido a
 -- quien los pueda ver. Los clientes sin ficha no tienen contacto.
 --
+-- ANTIGÜEDAD. Meses entre la primera compra y el último día del mes cerrado,
+-- como la segmentación anterior (dbo.segmentacion_rfm, "Antiguedad Meses":
+-- datediff de meses contra el cierre). La primera compra sale de
+-- fct_ventas_36m, que ya está agregada por cliente y mes: datediff(month)
+-- solo mira el mes, así que no hace falta el día, y evita recorrer la venta
+-- a grano de línea. Lo que se mide es la antigüedad dentro de los 36 meses
+-- de esa tabla, con tope en 36, igual que antes. Ventas_pos empieza el
+-- 17/08/2024: hasta que el cliente cargue la historia anterior, un cliente
+-- que ya compraba antes figura con primera compra en agosto de 2024. Un
+-- cliente sin compras en la ventana queda vacío y no en 0, que la
+-- segmentación anterior no distinguía de un cliente nuevo.
+--
 -- Las etiquetas de otros análisis (la segmentación RFM, el tipo de
 -- Canibalización) se suman acá cuando esos análisis estén construidos.
 --
@@ -40,6 +52,14 @@
 with universo as (
     select distinct cliente_id_limpio
     from {{ ref('int_clientes_mapeo_limpio') }}
+),
+
+primera_compra as (
+    select
+        cliente_id_limpio,
+        min(datefromparts(anio, mes, 1)) as mes_primera_compra
+    from {{ ref('fct_ventas_36m') }}
+    group by cliente_id_limpio
 )
 
 select
@@ -52,7 +72,10 @@ select
     case when c.cliente_id_limpio is null then 0 else 1 end as tiene_ficha,
     coalesce(m.nivel_mayorista, 'Sin clasificar')          as nivel_mayorista,
     coalesce(m.segmento_mayorista, 'Sin clasificar')       as segmento_mayorista,
-    coalesce(f.frecuencia_compra, 'Sin clasificar')        as frecuencia_compra
+    coalesce(f.frecuencia_compra, 'Sin clasificar')        as frecuencia_compra,
+    p.mes_primera_compra,
+    datediff(month, p.mes_primera_compra,
+             dateadd(day, -1, {{ fecha_corte_mes_cerrado() }})) as antiguedad_meses
 from universo u
 left join {{ ref('int_clientes_limpio') }} c
     on u.cliente_id_limpio = c.cliente_id_limpio
@@ -60,3 +83,5 @@ left join {{ ref('mayoristas_v3_resumen') }} m
     on u.cliente_id_limpio = m.cliente_id_limpio
 left join {{ ref('mayoristas_v3_frecuencia_compra') }} f
     on u.cliente_id_limpio = f.cliente_id_limpio
+left join primera_compra p
+    on u.cliente_id_limpio = p.cliente_id_limpio
