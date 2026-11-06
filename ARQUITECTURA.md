@@ -242,9 +242,10 @@ en un mart de proyecto. Hoy tiene la dimensión de clientes, la de categorías y
 diaria por categoría.
 
 `dim_cliente` es una fila por cliente, con su identidad y las etiquetas que les ponen
-los análisis: el nivel de Mayoristas, el segmento (Mayoristas o Minoristas) y cada
-cuánto compra. Incluye a todos los clientes del mapeo, también a los que compran sin
-haberse dado nunca de alta en `dbo.Clientes`, que salen como `(sin ficha)`. Está al
+los análisis: el nivel de Mayoristas, el segmento (Mayoristas o Minoristas), cada
+cuánto compra y su antigüedad, que sale de la primera compra en `fct_ventas_36m`.
+Incluye a todos los clientes del mapeo, también a los que compran sin haberse dado
+nunca de alta en `dbo.Clientes`, que salen como `(sin ficha)`. Está al
 final de la cadena: depende de los análisis, y ningún análisis la lee, porque dbt no
 puede ordenar dos modelos que se leen entre sí. Los análisis leen la identidad de
 `int_clientes_limpio`, que sigue siendo el insumo, y toman las etiquetas de los demás
@@ -282,6 +283,7 @@ graph TD
     INT_CLI[int_clientes_limpio] --> CLI[dim_cliente<br/>marts_core, identidad y etiquetas]
     INT_MAPEO --> CLI
     MAYO[mayoristas_v3_resumen<br/>y mayoristas_v3_frecuencia_compra] --> CLI
+    F36[fct_ventas_36m<br/>primera compra] --> CLI
     MAYO --> SNAP[mayoristas_v3_resumen_snapshot<br/>SCD2, historia del nivel]
 ```
 

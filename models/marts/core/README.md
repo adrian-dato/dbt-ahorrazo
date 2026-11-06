@@ -27,6 +27,13 @@ fallaría por dependencia circular. Los análisis leen la identidad de
 resultado donde se define: la segmentación RFM, por ejemplo, toma
 `segmento_mayorista` de `mayoristas_v3_resumen`.
 
+Trae también la antigüedad: el mes de la primera compra y los meses desde entonces
+hasta el cierre del último mes, igual que "Antiguedad Meses" de la segmentación
+anterior. La primera compra sale de `fct_ventas_36m`, así que la antigüedad tiene
+tope en 36 meses, y mientras `Ventas_pos` empiece el 17/08/2024 nadie figura con
+una primera compra anterior a agosto de 2024. Un cliente sin compras en esa
+ventana queda vacío.
+
 Trae celular y mail desde el 23/10/2026, porque el tablero de segmentación usa una
 sola tabla de clientes y muestra el celular. Son datos personales: el acceso a
 `marts_core` tiene que estar restringido a quien los pueda ver. Las etiquetas son las
