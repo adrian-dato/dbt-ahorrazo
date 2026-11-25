@@ -117,7 +117,7 @@ graph TD
     end
 
     subgraph INT["intermediate"]
-        INT_NORM[int_clientes_normalizados<br/>view]
+        INT_NORM[int_clientes_normalizados<br/>table]
         INT_MAPEO[int_clientes_mapeo_limpio<br/>incremental, el más pesado]
         INT_LIMPIO[int_clientes_limpio<br/>table]
         INT_PROD[int_productos_limpio<br/>table]

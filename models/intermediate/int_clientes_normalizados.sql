@@ -20,6 +20,16 @@
 -- identificables -- decisión de negocio es excluirlos de la
 -- segmentación, no inventarles un id (ver derivar_cliente_id_limpio).
 -- int_clientes_limpio ya filtra esto; int_clientes_mapeo_limpio también.
+--
+-- table y no view: en el servidor (SQL Server 2022 RTM, sin actualizaciones),
+-- cuando esto era una vista, int_clientes_limpio terminaba con una fila de
+-- cliente_id_limpio NULL aunque filtra `is not null`: la misma consulta sin
+-- la columna de dbo.fn_nombre_limpio filtraba bien, con ella no. Guardado
+-- como tabla, el id ya es una columna común y el filtro de abajo no depende
+-- de cómo el optimizador combine la función con las expresiones de limpieza.
+-- Además la función corre una sola vez por corrida, no una por consumidor.
+
+{{ config(materialized='table') }}
 
 with normalizado as (
     select
