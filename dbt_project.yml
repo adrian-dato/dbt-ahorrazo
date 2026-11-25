@@ -110,6 +110,10 @@ seeds:
     productos_excluidos:
       +column_types:
         producto_id: varchar(50)
+    clientes_excluidos:
+      +column_types:
+        cliente_id_limpio: varchar(50)
+        motivo: varchar(200)
 
 models:
   dbt_ahorrazo:

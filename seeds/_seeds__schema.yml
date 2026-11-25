@@ -1,0 +1,13 @@
+version: 2
+
+seeds:
+  - name: clientes_excluidos
+    description: >
+      Clientes que no entran en ningún análisis. int_ventas_elegibles descarta
+      sus ventas, así que no llegan a ningún mart ni a la segmentación. Siguen
+      en el catálogo de clientes (int_clientes_limpio, dim_cliente).
+    columns:
+      - name: cliente_id_limpio
+        tests:
+          - not_null
+          - unique

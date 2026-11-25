@@ -10,9 +10,11 @@
 --     vive en int_productos_limpio, no acá -- este modelo hace INNER JOIN
 --     ahí en vez de repetir el WHERE. Ver ese modelo para el detalle
 --     completo de qué se excluye y por qué.
---   - Del lado de la venta/cliente: excluye el cliente de test histórico
---     (44444401) -- esto sí queda acá, es una propiedad de la venta, no
---     del producto.
+--   - Del lado del cliente: descarta las ventas de los clientes de
+--     seeds/clientes_excluidos.csv (el cliente de prueba 44444401 y los que
+--     pidieron sacar los stakeholders). Va acá y no en int_clientes_limpio:
+--     ese es el catálogo de clientes y las ventas no pasan por él, así que
+--     sacarlos de ahí no los sacaba de ningún análisis.
 --
 -- View, sin materializar: cada mart consumidor define su propia ventana
 -- de fechas sobre este resultado, acá no se fija ninguna.
@@ -80,4 +82,8 @@ inner join mapeo c
 inner join {{ ref('int_productos_limpio') }} p
     on cast(v.producto_id as varchar(100)) = cast(p.producto_id as varchar(100))
 where
-    isnull(c.cliente_id_limpio, '') <> '44444401'
+    not exists (
+        select 1
+        from {{ ref('clientes_excluidos') }} ce
+        where ce.cliente_id_limpio = c.cliente_id_limpio
+    )

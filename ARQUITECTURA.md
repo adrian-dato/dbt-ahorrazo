@@ -107,6 +107,7 @@ graph TD
 
     subgraph SEEDS["seeds"]
         SEED_EXCL[productos_excluidos]
+        SEED_CLI_EXCL[clientes_excluidos]
         SEED_SUC[dim_sucursal_mapeo]
     end
 
@@ -140,13 +141,14 @@ graph TD
     STG_VENTAS --> INT_ELEG
     INT_MAPEO --> INT_ELEG
     INT_PROD --> INT_ELEG
+    SEED_CLI_EXCL --> INT_ELEG
 
     INT_ELEG --> INT_12M_T
 ```
 
 **`int_ventas_elegibles`** es la única fuente de verdad de "qué es una
 venta válida para análisis" (empresa=3, exclusión de categorías
-bolsa/egre/servi, cliente de test, productos de `productos_excluidos`):
+bolsa/egre/servi, clientes de `clientes_excluidos`, productos de `productos_excluidos`):
 la consumen directo o indirecto los 3 proyectos.
 
 **`int_productos_limpio`** es el catálogo de productos elegibles (empresa 3, sin
